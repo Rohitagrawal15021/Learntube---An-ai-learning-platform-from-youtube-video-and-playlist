@@ -1,0 +1,100 @@
+{
+    "flashcards": [
+        {
+            "id": 1,
+            "question": "What is the basic structural and functional unit of life?",
+            "answer": "A cell.",
+            "type": "definition",
+            "difficulty": "easy",
+            "topic": "cell"
+        },
+        {
+            "id": 2,
+            "question": "What organelle is referred to as the \"powerhouse\" of the cell?",
+            "answer": "Mitochondria.",
+            "type": "definition",
+            "difficulty": "easy",
+            "topic": "mitochondria"
+        },
+        {
+            "id": 3,
+            "question": "What molecule is considered the energy currency of the cell?",
+            "answer": "ATP (adenosine triphosphate).",
+            "type": "definition",
+            "difficulty": "easy",
+            "topic": "ATP"
+        },
+        {
+            "id": 4,
+            "question": "How do unicellular and multicellular organisms differ in terms of cellular organization?",
+            "answer": "Unicellular organisms perform all life functions in a single cell, whereas multicellular organisms have many specialized cells forming tissues and organs.",
+            "type": "concept",
+            "difficulty": "medium",
+            "topic": "cellular organization"
+        },
+        {
+            "id": 5,
+            "question": "Why are viruses not classified as living organisms?",
+            "answer": "Because they lack a cellular structure and cannot carry out metabolic processes independently.",
+            "type": "definition",
+            "difficulty": "easy",
+            "topic": "viruses"
+        },
+        {
+            "id": 6,
+            "question": "What key cellular feature distinguishes prokaryotes from eukaryotes?",
+            "answer": "Prokaryotes lack membrane-bound organelles and a well‑developed nucleus.",
+            "type": "comparison",
+            "difficulty": "medium",
+            "topic": "prokaryotes"
+        },
+        {
+            "id": 7,
+            "question": "Where was the first cell observed and what was notable about it?",
+            "answer": "In the bark of Quercus suber (oak); it was not a living cell.",
+            "type": "definition",
+            "difficulty": "easy",
+            "topic": "history"
+        },
+        {
+            "id": 8,
+            "question": "What technological advancement in the 1950s–1960s allowed scientists to visualize ribosomes and the cell membrane?",
+            "answer": "The electron microscope, which revealed ribosomes (15–20 nm) in 1953 and contributed to understanding the cell membrane.",
+            "type": "concept",
+            "difficulty": "medium",
+            "topic": "microscopy"
+        },
+        {
+            "id": 9,
+            "question": "What is the fluid‑mosaic model of the plasma membrane?",
+            "answer": "A model proposed by Singer and Nicolson in 1972 describing the membrane as a fluid bilayer with embedded proteins moving laterally.",
+            "type": "definition",
+            "difficulty": "easy",
+            "topic": "membrane"
+        },
+        {
+            "id": 10,
+            "question": "What are the two main postulates of the cell theory?",
+            "answer": "1) All living organisms are made of cells or products of cells. 2) New cells arise from pre‑existing cells.",
+            "type": "definition",
+            "difficulty": "medium",
+            "topic": "cell theory"
+        },
+        {
+            "id": 11,
+            "question": "Why does Rudolf Virchow state that new cells arise from pre‑existing cells?",
+            "answer": "Because cellular division is the only way to increase cell number, ensuring continuity of life processes.",
+            "type": "reasoning",
+            "difficulty": "hard",
+            "topic": "cell theory"
+        },
+        {
+            "id": 12,
+            "question": "What type of plants are bryophytes?",
+            "answer": "Bryophytes are non‑vascular plants such as mosses.",
+            "type": "definition",
+            "difficulty": "easy",
+            "topic": "bryophytes"
+        }
+    ]
+}

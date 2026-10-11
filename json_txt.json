@@ -1,14 +1,191 @@
 {
-    "title": "No Lecture Notes Provided",
-    "difficulty": "",
-    "estimated_study_time": "",
-    "overview": "No lecture notes were included in the input prompt. Please provide the lecture notes text to generate a complete structured study guide.",
-    "sections": [],
-    "definitions": [],
-    "important_terms": [],
-    "key_takeaways": [],
-    "exam_tips": [],
-    "memory_tricks": [],
-    "frequently_confused_topics": [],
-    "summary": "No content available to summarize. Please paste the lecture notes."
+    "title": "Study Notes – Cell: The Unit of Life",
+    "difficulty": "Intermediate",
+    "estimated_study_time": "2-3 hours",
+    "overview": "Comprehensive revision notes covering the fundamentals of cell biology, historical development, cell theory, cell structure, and key distinctions between plant and animal cells, designed for Class 11 biology and NEET preparation.",
+    "sections": [
+        {
+            "heading": "Fundamental Concepts of Life",
+            "subtopics": [
+                {
+                    "title": "Key Biological Facts",
+                    "content": "Cell: Structural & functional unit of life.\nMitochondria: Powerhouse of the cell.\nATP: Energy currency.\nBryophytes: Amphibians of the plant kingdom.",
+                    "important_points": [
+                        "Cell is the basic unit of life",
+                        "Mitochondria generate ATP",
+                        "Bryophytes are non‑vascular plants"
+                    ],
+                    "examples": [],
+                    "learning_assets": [],
+                    "common_mistakes": []
+                },
+                {
+                    "title": "Definition of a Living Organism",
+                    "content": "Presence of cells is the defining feature.\nLiving vs. non‑living: Humans, plants, bacteria have cells; microphones, pens do not.\nViruses are not considered living because they lack their own cell.",
+                    "important_points": [
+                        "Cells are essential for life",
+                        "Viruses lack cellular structure"
+                    ],
+                    "examples": [],
+                    "learning_assets": [],
+                    "common_mistakes": []
+                },
+                {
+                    "title": "Unicellular vs. Multicellular Organisms",
+                    "content": "Multicellular: Humans (billions of cells) – complex tissues & organs.\nUnicellular: Bacteria, protozoans – single cell performs all life functions.\nNCERT Quote: “The structure of bacteria is very simple.”\nBacteria (Prokaryotes): No membrane‑bound organelles, no well‑developed nucleus, high metabolic diversity, independent existence.",
+                    "important_points": [
+                        "Multicellular organisms have specialized tissues",
+                        "Unicellular organisms perform all functions in one cell",
+                        "Prokaryotes lack organelles"
+                    ],
+                    "examples": [],
+                    "learning_assets": [],
+                    "common_mistakes": []
+                }
+            ]
+        },
+        {
+            "heading": "Historical Development of Cell Biology",
+            "subtopics": [
+                {
+                    "title": "Discovery of the Cell",
+                    "content": "First cell observed in bark of *Quercus suber* (oak). Note: The first cell discovered was **not** a living cell.",
+                    "important_points": [
+                        "First cell observed in oak bark",
+                        "Not a living cell"
+                    ],
+                    "examples": [],
+                    "learning_assets": [],
+                    "common_mistakes": []
+                },
+                {
+                    "title": "Advancements in Microscopy (1950s–1960s)",
+                    "content": "Electron microscope breakthroughs (1950–1960) enabled visualization of structures previously invisible.\nKey Discoveries Post‑1950:\n- Ribosomes: 15–20 nm (1953)\n- Cell membrane: Gradual understanding (1950)\n- Fluid‑mosaic model: 1972 (Singer & Nicolson) – final model of plasma membrane",
+                    "important_points": [
+                        "Electron microscopy revolutionized cell biology",
+                        "Ribosomes first seen in 1953",
+                        "Fluid‑mosaic model established 1972"
+                    ],
+                    "examples": [],
+                    "learning_assets": [],
+                    "common_mistakes": []
+                }
+            ]
+        },
+        {
+            "heading": "Cell Theory",
+            "subtopics": [
+                {
+                    "title": "Cell Theory Postulates",
+                    "content": "Scientist | Year | Key Contribution | Scope\n--- | --- | --- | ---\nMatthias Schleiden | 1838 | Plants composed of cells forming tissues | Plants only\nTheodor Schwann | 1839 | All animals & plants made of cells; identified cell membrane & wall | All organisms\nRudolf Virchow | 1855 | “Omnis cellula‑e cellula” – new cells arise from pre‑existing cells | All organisms\n\nPostulates:\n1. All living organisms are made of cells or products of cells.\n2. New cells arise from pre‑existing cells.",
+                    "important_points": [
+                        "Three scientists established cell theory",
+                        "All organisms are cellular",
+                        "Cells arise from existing cells"
+                    ],
+                    "examples": [],
+                    "learning_assets": [],
+                    "common_mistakes": []
+                }
+            ]
+        }
+    ],
+    "flashcards": [
+        {
+            "id": 1,
+            "question": "What is the basic structural and functional unit of life?",
+            "answer": "A cell.",
+            "type": "definition",
+            "difficulty": "easy",
+            "topic": "cell"
+        },
+        {
+            "id": 2,
+            "question": "What organelle is referred to as the \"powerhouse\" of the cell?",
+            "answer": "Mitochondria.",
+            "type": "definition",
+            "difficulty": "easy",
+            "topic": "mitochondria"
+        },
+        {
+            "id": 3,
+            "question": "What molecule is considered the energy currency of the cell?",
+            "answer": "ATP (adenosine triphosphate).",
+            "type": "definition",
+            "difficulty": "easy",
+            "topic": "ATP"
+        },
+        {
+            "id": 4,
+            "question": "How do unicellular and multicellular organisms differ in terms of cellular organization?",
+            "answer": "Unicellular organisms perform all life functions in a single cell, whereas multicellular organisms have many specialized cells forming tissues and organs.",
+            "type": "concept",
+            "difficulty": "medium",
+            "topic": "cellular organization"
+        },
+        {
+            "id": 5,
+            "question": "Why are viruses not classified as living organisms?",
+            "answer": "Because they lack a cellular structure and cannot carry out metabolic processes independently.",
+            "type": "definition",
+            "difficulty": "easy",
+            "topic": "viruses"
+        },
+        {
+            "id": 6,
+            "question": "What key cellular feature distinguishes prokaryotes from eukaryotes?",
+            "answer": "Prokaryotes lack membrane-bound organelles and a well‑developed nucleus.",
+            "type": "comparison",
+            "difficulty": "medium",
+            "topic": "prokaryotes"
+        },
+        {
+            "id": 7,
+            "question": "Where was the first cell observed and what was notable about it?",
+            "answer": "In the bark of Quercus suber (oak); it was not a living cell.",
+            "type": "definition",
+            "difficulty": "easy",
+            "topic": "history"
+        },
+        {
+            "id": 8,
+            "question": "What technological advancement in the 1950s–1960s allowed scientists to visualize ribosomes and the cell membrane?",
+            "answer": "The electron microscope, which revealed ribosomes (15–20 nm) in 1953 and contributed to understanding the cell membrane.",
+            "type": "concept",
+            "difficulty": "medium",
+            "topic": "microscopy"
+        },
+        {
+            "id": 9,
+            "question": "What is the fluid‑mosaic model of the plasma membrane?",
+            "answer": "A model proposed by Singer and Nicolson in 1972 describing the membrane as a fluid bilayer with embedded proteins moving laterally.",
+            "type": "definition",
+            "difficulty": "easy",
+            "topic": "membrane"
+        },
+        {
+            "id": 10,
+            "question": "What are the two main postulates of the cell theory?",
+            "answer": "1) All living organisms are made of cells or products of cells. 2) New cells arise from pre‑existing cells.",
+            "type": "definition",
+            "difficulty": "medium",
+            "topic": "cell theory"
+        },
+        {
+            "id": 11,
+            "question": "Why does Rudolf Virchow state that new cells arise from pre‑existing cells?",
+            "answer": "Because cellular division is the only way to increase cell number, ensuring continuity of life processes.",
+            "type": "reasoning",
+            "difficulty": "hard",
+            "topic": "cell theory"
+        },
+        {
+            "id": 12,
+            "question": "What type of plants are bryophytes?",
+            "answer": "Bryophytes are non‑vascular plants such as mosses.",
+            "type": "definition",
+            "difficulty": "easy",
+            "topic": "bryophytes"
+        }
+    ]
 }
