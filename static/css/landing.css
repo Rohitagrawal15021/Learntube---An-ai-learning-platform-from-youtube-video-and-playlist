@@ -1,0 +1,1110 @@
+/* ==========================================================
+   LearnTube — landing page
+   Direction: notebook spread. Paper, ink, highlighter, red pen.
+   Scoped to the landing page only — does not touch style.css,
+   notes.css or flashcard.css.
+   ========================================================== */
+
+/* ----------------------------------------------------------
+   1. TOKENS
+---------------------------------------------------------- */
+:root {
+    /* paper */
+    --paper:        #F7F5EF;   /* page background */
+    --sheet:        #FDFCF8;   /* the brighter sheet of the spread */
+    --paper-edge:   #E6E0D2;   /* shadowed edge / stacked sheets */
+
+    /* the printed lines on real notebook paper */
+    --rule:         #CBDCEA;   /* pale blue horizontal rule */
+    --margin-line:  #E9A7AD;   /* pink vertical margin line */
+    --rule-pitch:   28px;      /* everything on the pages sits on this grid */
+
+    /* ink */
+    --ink:          #1B2A4A;   /* blue-black, main text */
+    --ink-soft:     #56668A;   /* secondary text */
+    --graphite:     #8B8676;   /* pencil — captions, small print */
+
+    /* pens */
+    --pen-red:      #D24039;   /* corrections, the "messy" side */
+    --highlighter:  #FFE45C;   /* marker swipe */
+    --tape:         #E8DFC4;   /* washi tape / sticker */
+
+    /* type */
+    --display: 'Bricolage Grotesque', system-ui, sans-serif;
+    --body:    'Archivo', system-ui, sans-serif;
+    --hand:    'Kalam', 'Bricolage Grotesque', cursive;
+    --mono:    'DM Mono', ui-monospace, monospace;
+
+    /* layout */
+    --shell:  1240px;
+    --gutter: clamp(20px, 5vw, 64px);
+
+    --ease: cubic-bezier(.2, .7, .2, 1);
+}
+
+/* ----------------------------------------------------------
+   2. RESET & PAGE
+---------------------------------------------------------- */
+*, *::before, *::after { box-sizing: border-box; }
+
+html { scroll-behavior: smooth; }
+
+body {
+    margin: 0;
+    background-color: var(--paper);
+    color: var(--ink);
+    font-family: var(--body);
+    font-size: 16px;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
+}
+
+/* paper grain — one fixed layer, never intercepts clicks */
+body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+    opacity: .35;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='3'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)' opacity='.42'/%3E%3C/svg%3E");
+}
+
+body > * { position: relative; z-index: 1; }
+
+h1, h2, h3 {
+    font-family: var(--display);
+    font-weight: 800;
+    letter-spacing: -.02em;
+    line-height: 1.08;
+    margin: 0;
+    text-wrap: balance;
+}
+
+p  { margin: 0; }
+ul, ol { margin: 0; padding: 0; list-style: none; }
+
+.skip-link {
+    position: absolute;
+    left: -9999px;
+    top: 10px;
+    background: var(--ink);
+    color: var(--sheet);
+    padding: 10px 18px;
+    border-radius: 4px;
+    z-index: 99;
+}
+.skip-link:focus { left: 16px; }
+
+:focus-visible {
+    outline: 2.5px solid var(--pen-red);
+    outline-offset: 3px;
+}
+
+/* the marker swipe — used for the headline and inside notes */
+.hl, .notes mark {
+    background-color: transparent;
+    background-image: linear-gradient(var(--highlighter), var(--highlighter));
+    background-repeat: no-repeat;
+    background-position: 0 .58em;
+    background-size: 0 .44em;
+    color: inherit;
+    animation: swipe .85s .45s var(--ease) forwards;
+}
+.notes mark { animation-delay: 1.5s; padding: 0 .1em; }
+
+@keyframes swipe { to { background-size: 104% .44em; } }
+
+/* ----------------------------------------------------------
+   3. NAV
+---------------------------------------------------------- */
+.nav {
+    max-width: var(--shell);
+    margin: 0 auto;
+    padding: 22px var(--gutter);
+    display: flex;
+    align-items: center;
+    gap: 24px;
+}
+
+.brand {
+    display: inline-flex;
+    align-items: center;
+    gap: 9px;
+    text-decoration: none;
+    color: var(--ink);
+    margin-right: auto;
+}
+
+/* the little bound-notebook tab */
+.brand-tab {
+    width: 22px;
+    height: 26px;
+    background: var(--sheet);
+    border: 1.5px solid var(--ink);
+    border-radius: 2px 4px 4px 2px;
+    box-shadow: 3px 3px 0 var(--highlighter);
+    position: relative;
+    flex: none;
+}
+.brand-tab::after {
+    content: "";
+    position: absolute;
+    left: 5px;
+    top: 0;
+    bottom: 0;
+    width: 1.5px;
+    background: var(--margin-line);
+}
+
+.brand-name {
+    font-family: var(--display);
+    font-weight: 800;
+    font-size: 1.22rem;
+    letter-spacing: -.03em;
+}
+
+.nav-links {
+    display: flex;
+    gap: 28px;
+}
+
+.nav-links a {
+    font-size: .93rem;
+    font-weight: 500;
+    color: var(--ink-soft);
+    text-decoration: none;
+    padding: 4px 0;
+    background-image: linear-gradient(var(--ink), var(--ink));
+    background-repeat: no-repeat;
+    background-position: 0 100%;
+    background-size: 0 1.5px;
+    transition: background-size .25s var(--ease), color .2s;
+}
+.nav-links a:hover {
+    color: var(--ink);
+    background-size: 100% 1.5px;
+}
+
+.nav-cta {
+    font-family: var(--display);
+    font-weight: 600;
+    font-size: .93rem;
+    text-decoration: none;
+    color: var(--ink);
+    padding: 10px 20px;
+    border: 1.8px solid var(--ink);
+    border-radius: 3px;
+    background: var(--sheet);
+    box-shadow: 3px 3px 0 var(--ink);
+    transition: transform .16s var(--ease), box-shadow .16s var(--ease);
+}
+.nav-cta:hover {
+    transform: translate(-1.5px, -1.5px);
+    box-shadow: 5px 5px 0 var(--ink);
+}
+.nav-cta:active {
+    transform: translate(2px, 2px);
+    box-shadow: 1px 1px 0 var(--ink);
+}
+
+/* ----------------------------------------------------------
+   4. HERO
+---------------------------------------------------------- */
+.hero {
+    max-width: var(--shell);
+    margin: 0 auto;
+    padding: clamp(28px, 5vw, 60px) var(--gutter) 0;
+}
+
+.hero-copy { max-width: 640px; }
+
+.eyebrow {
+    font-family: var(--hand);
+    font-size: 1.18rem;
+    color: var(--pen-red);
+    transform: rotate(-1.2deg);
+    margin-bottom: 14px;
+}
+
+.hero-title {
+    font-size: clamp(2.3rem, 6.4vw, 4.1rem);
+    margin-bottom: 20px;
+}
+
+.hero-sub {
+    font-size: clamp(1rem, 1.6vw, 1.12rem);
+    color: var(--ink-soft);
+    max-width: 54ch;
+    margin-bottom: 34px;
+}
+
+/* ---- the link box ---- */
+.paste { max-width: 620px; }
+
+.paste-label {
+    display: block;
+    font-family: var(--mono);
+    font-size: .7rem;
+    text-transform: uppercase;
+    letter-spacing: .14em;
+    color: var(--graphite);
+    margin-bottom: 8px;
+}
+
+.paste-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: var(--sheet);
+    border: 2px solid var(--ink);
+    border-radius: 4px;
+    padding: 7px 7px 7px 15px;
+    box-shadow: 5px 5px 0 var(--paper-edge);
+    transition: box-shadow .2s var(--ease);
+}
+.paste-row:focus-within { box-shadow: 5px 5px 0 var(--highlighter); }
+
+.paste-icon {
+    color: var(--pen-red);
+    font-size: .82rem;
+    flex: none;
+}
+
+.paste-row input {
+    flex: 1;
+    min-width: 0;
+    border: 0;
+    background: transparent;
+    font-family: var(--mono);
+    font-size: .93rem;
+    color: var(--ink);
+    padding: 11px 0;
+}
+.paste-row input:focus { outline: none; }
+.paste-row input::placeholder { color: #A9A497; }
+
+.paste-row input.is-invalid {
+    animation: nudge .4s var(--ease);
+    color: var(--pen-red);
+}
+.paste-row input.is-invalid::placeholder { color: var(--pen-red); }
+
+@keyframes nudge {
+    0%, 100% { transform: translateX(0); }
+    22%      { transform: translateX(-6px); }
+    58%      { transform: translateX(5px); }
+    82%      { transform: translateX(-2px); }
+}
+
+.paste-btn {
+    flex: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-family: var(--display);
+    font-weight: 700;
+    font-size: .95rem;
+    color: var(--sheet);
+    background: var(--ink);
+    border: 0;
+    border-radius: 3px;
+    padding: 13px 20px;
+    cursor: pointer;
+    transition: background .2s, transform .16s var(--ease);
+}
+.paste-btn:hover  { background: #24365C; transform: translateX(2px); }
+.paste-btn:active { transform: translateX(0); }
+
+.paste-btn svg {
+    width: 17px;
+    height: 17px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 2.2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+.paste-hint {
+    margin-top: 12px;
+    font-size: .87rem;
+    color: var(--graphite);
+}
+
+.paste-error {
+    margin-top: 14px;
+    padding: 12px 16px;
+    background: #FEF0EF;
+    border: 1px solid #E8A09A;
+    border-radius: 8px;
+    color: #943030;
+    font-size: .92rem;
+    line-height: 1.5;
+    font-weight: 500;
+}
+
+.sample-chip {
+    font-family: var(--hand);
+    font-size: 1.02rem;
+    color: var(--ink);
+    background: var(--highlighter);
+    border: 0;
+    border-radius: 3px;
+    padding: 2px 9px;
+    cursor: pointer;
+    transform: rotate(-.6deg);
+    transition: transform .16s var(--ease);
+}
+.sample-chip:hover { transform: rotate(.8deg) scale(1.03); }
+
+.sample-chip--continue {
+    background: #d4f5e2;
+    color: #1a6640;
+    margin-left: .35rem;
+    transform: rotate(.4deg);
+}
+.sample-chip--continue:hover { transform: rotate(-.7deg) scale(1.03); }
+
+/* ----------------------------------------------------------
+   5. SIGNATURE — THE NOTEBOOK SPREAD
+---------------------------------------------------------- */
+.spread-wrap {
+    max-width: var(--shell);
+    margin: clamp(46px, 7vw, 78px) auto 0;
+    padding: 0 var(--gutter);
+    perspective: 1600px;
+}
+
+.spread {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    position: relative;
+    border-radius: 3px;
+    /* stacked sheets underneath */
+    box-shadow:
+        0 1px 0 var(--paper-edge),
+        0 22px 40px -22px rgba(27, 42, 74, .32),
+        6px 6px 0 -2px var(--sheet),
+        7px 7px 0 -2px var(--paper-edge),
+        12px 12px 0 -4px var(--sheet),
+        13px 13px 0 -4px var(--paper-edge);
+    transform-origin: 50% 0;
+    opacity: 0;
+    animation: open .9s .15s var(--ease) forwards;
+}
+
+@keyframes open {
+    from { opacity: 0; transform: rotateX(9deg) translateY(22px); }
+    to   { opacity: 1; transform: rotateX(0)   translateY(0); }
+}
+
+.spine {
+    position: absolute;
+    left: 50%;
+    top: 0;
+    bottom: 0;
+    width: 26px;
+    transform: translateX(-50%);
+    background: linear-gradient(90deg,
+        rgba(27, 42, 74, 0) 0%,
+        rgba(27, 42, 74, .10) 42%,
+        rgba(27, 42, 74, .16) 50%,
+        rgba(27, 42, 74, .10) 58%,
+        rgba(27, 42, 74, 0) 100%);
+    z-index: 3;
+}
+
+.page {
+    padding: 22px clamp(24px, 2.6vw, 34px) 20px;
+    min-height: 380px;
+    display: flex;
+    flex-direction: column;
+    background-color: var(--sheet);
+    /* the ruled grid — text lines sit on these */
+    background-image: repeating-linear-gradient(
+        to bottom,
+        transparent 0 calc(var(--rule-pitch) - 1px),
+        var(--rule) calc(var(--rule-pitch) - 1px) var(--rule-pitch)
+    );
+    background-position: 0 66px;
+}
+
+.page-left  { border-radius: 3px 0 0 3px; position: relative; }
+.page-right { border-radius: 0 3px 3px 0; position: relative; }
+
+/* the pink margin line each page is printed with */
+.page-left::before,
+.page-right::before {
+    content: "";
+    position: absolute;
+    left: 15px;
+    top: 0;
+    bottom: 0;
+    width: 1.5px;
+    background: var(--margin-line);
+    opacity: .8;
+}
+
+.page-head {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px 12px;
+    align-items: baseline;
+    justify-content: space-between;
+    padding-bottom: 12px;
+    margin-bottom: 16px;
+    border-bottom: 1.5px solid var(--ink);
+}
+
+.page-kicker {
+    font-family: var(--display);
+    font-weight: 600;
+    font-size: .76rem;
+    text-transform: uppercase;
+    letter-spacing: .1em;
+}
+
+.page-meta {
+    font-family: var(--mono);
+    font-size: .7rem;
+    color: var(--graphite);
+}
+
+/* ---- left page: the raw transcript ---- */
+.transcript {
+    flex: 1;
+    font-family: var(--mono);
+    font-size: .8rem;
+    line-height: var(--rule-pitch);
+    color: var(--ink-soft);
+}
+
+.transcript p {
+    /* each line gets struck/greyed in sequence by JS */
+    opacity: .28;
+    transition: opacity .45s var(--ease);
+}
+.transcript p.is-said { opacity: 1; }
+
+.transcript b {
+    color: var(--pen-red);
+    font-weight: 500;
+    margin-right: 6px;
+}
+
+.transcript em {
+    font-style: normal;
+    color: var(--graphite);
+    background: rgba(139, 134, 118, .13);
+    padding: 0 4px;
+}
+
+.transcript s {
+    color: #A9A497;
+    text-decoration-color: var(--pen-red);
+    text-decoration-thickness: 1.5px;
+}
+
+/* ---- right page: the clean notes ---- */
+.notes {
+    flex: 1;
+    line-height: var(--rule-pitch);
+}
+
+.notes-h {
+    font-family: var(--hand);
+    font-weight: 700;
+    font-size: 1.3rem;
+    line-height: var(--rule-pitch);
+    margin-bottom: 4px;
+    text-decoration: underline;
+    text-decoration-color: var(--highlighter);
+    text-decoration-thickness: 4px;
+    text-underline-offset: 2px;
+}
+
+.notes-list { margin-bottom: 14px; }
+
+.notes-list li {
+    font-size: .89rem;
+    line-height: var(--rule-pitch);
+    padding-left: 18px;
+    position: relative;
+}
+.notes-list li::before {
+    content: "•";
+    position: absolute;
+    left: 3px;
+    color: var(--pen-red);
+    font-weight: 700;
+}
+
+.def-card {
+    border: 1.5px solid var(--ink);
+    border-left: 5px solid var(--highlighter);
+    border-radius: 3px;
+    padding: 8px 12px;
+    background: rgba(255, 228, 92, .07);
+    margin-bottom: 10px;
+}
+
+.def-term {
+    display: block;
+    font-family: var(--mono);
+    font-weight: 500;
+    font-size: .78rem;
+    letter-spacing: .04em;
+}
+
+.def-body {
+    display: block;
+    font-size: .84rem;
+    line-height: 1.5;
+    color: var(--ink-soft);
+}
+
+.margin-note {
+    font-family: var(--hand);
+    font-size: 1.05rem;
+    color: var(--pen-red);
+    transform: rotate(-1.6deg);
+    padding-left: 14px;
+}
+
+.page-verdict {
+    margin-top: 16px;
+    padding-top: 10px;
+    border-top: 1.5px dashed var(--paper-edge);
+    font-family: var(--display);
+    font-weight: 600;
+    font-size: .82rem;
+}
+.page-verdict--bad  { color: var(--pen-red); }
+.page-verdict--good { color: var(--ink); }
+
+.spread-caption {
+    margin: 26px auto 0;
+    max-width: 62ch;
+    text-align: center;
+    font-size: .9rem;
+    color: var(--graphite);
+}
+
+.arrow {
+    font-family: var(--hand);
+    color: var(--pen-red);
+    font-size: 1.2rem;
+    margin-right: 4px;
+}
+
+/* ----------------------------------------------------------
+   6. SECTIONS
+---------------------------------------------------------- */
+.section {
+    max-width: var(--shell);
+    margin: 0 auto;
+    padding: clamp(70px, 9vw, 120px) var(--gutter) 0;
+}
+
+.section-head {
+    max-width: 60ch;
+    margin-bottom: clamp(32px, 4vw, 52px);
+}
+
+.section-title {
+    font-size: clamp(1.7rem, 3.6vw, 2.5rem);
+    margin-bottom: 12px;
+}
+
+.section-sub {
+    color: var(--ink-soft);
+    font-size: 1rem;
+}
+
+/* ---- index cards ---- */
+.cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(238px, 1fr));
+    gap: 22px;
+}
+
+.card {
+    --tilt: 0deg;
+    background: var(--sheet);
+    border: 1.8px solid var(--ink);
+    border-radius: 3px;
+    padding: 20px 20px 16px;
+    box-shadow: 4px 4px 0 var(--paper-edge);
+    transform: rotate(var(--tilt));
+    transition: transform .22s var(--ease), box-shadow .22s var(--ease);
+    /* the single ruled line an index card actually has */
+    background-image: linear-gradient(var(--rule), var(--rule));
+    background-repeat: no-repeat;
+    background-position: 0 58px;
+    background-size: 100% 1.5px;
+}
+
+.card:hover {
+    transform: rotate(0deg) translateY(-5px);
+    box-shadow: 7px 9px 0 var(--paper-edge);
+}
+
+.card-tag {
+    display: inline-block;
+    font-family: var(--mono);
+    font-size: .63rem;
+    text-transform: uppercase;
+    letter-spacing: .11em;
+    padding: 2px 7px;
+    border-radius: 2px;
+    margin-bottom: 12px;
+}
+.card-tag--ready { background: var(--highlighter); color: var(--ink); }
+.card-tag--soon  { background: var(--tape); color: var(--graphite); }
+
+.card-title {
+    font-size: 1.32rem;
+    margin-bottom: 10px;
+}
+
+.card-body {
+    font-size: .89rem;
+    color: var(--ink-soft);
+    margin-bottom: 14px;
+}
+
+.card-foot {
+    font-family: var(--mono);
+    font-size: .7rem;
+    color: var(--graphite);
+    padding-top: 10px;
+    border-top: 1.5px dashed var(--paper-edge);
+}
+
+/* background-color, not background — the shorthand would wipe out
+   the ruled line painted by .card's background-image */
+.card--soon { background-color: #F4F1E6; }
+.card--soon .card-title { color: var(--ink-soft); }
+
+/* ---- how it works ---- */
+.section--ruled .steps {
+    background-color: var(--sheet);
+    border: 1.8px solid var(--ink);
+    border-radius: 3px;
+    box-shadow: 6px 6px 0 var(--paper-edge);
+    padding: clamp(22px, 3vw, 38px) clamp(20px, 3vw, 40px);
+    background-image: repeating-linear-gradient(
+        to bottom,
+        transparent 0 calc(var(--rule-pitch) - 1px),
+        var(--rule) calc(var(--rule-pitch) - 1px) var(--rule-pitch)
+    );
+    background-position: 0 30px;
+}
+
+.step {
+    display: flex;
+    gap: 20px;
+    padding: 18px 0;
+}
+.step + .step { border-top: 1.5px dashed var(--paper-edge); }
+
+/* numbered because the steps genuinely are a sequence */
+.step-num {
+    flex: none;
+    width: 38px;
+    height: 38px;
+    display: grid;
+    place-items: center;
+    font-family: var(--display);
+    font-weight: 800;
+    font-size: 1.1rem;
+    color: var(--sheet);
+    background: var(--ink);
+    border-radius: 50%;
+}
+
+.step-title {
+    font-size: 1.16rem;
+    margin-bottom: 6px;
+}
+
+.step-body {
+    font-size: .92rem;
+    color: var(--ink-soft);
+    max-width: 68ch;
+}
+.step-body em {
+    font-style: normal;
+    font-family: var(--mono);
+    font-size: .85em;
+    background: rgba(139, 134, 118, .14);
+    padding: 0 4px;
+}
+
+/* ---- closing ---- */
+.closing {
+    text-align: center;
+    padding-bottom: clamp(70px, 9vw, 110px);
+}
+
+.closing-title {
+    font-size: clamp(1.6rem, 4vw, 2.7rem);
+    max-width: 22ch;
+    margin: 0 auto 14px;
+}
+
+.closing-sub {
+    font-family: var(--hand);
+    font-size: 1.3rem;
+    color: var(--pen-red);
+    margin-bottom: 30px;
+    transform: rotate(-.8deg);
+}
+
+.closing-cta {
+    display: inline-block;
+    font-family: var(--display);
+    font-weight: 700;
+    font-size: 1rem;
+    text-decoration: none;
+    color: var(--sheet);
+    background: var(--ink);
+    border-radius: 3px;
+    padding: 15px 30px;
+    box-shadow: 5px 5px 0 var(--highlighter);
+    transition: transform .16s var(--ease), box-shadow .16s var(--ease);
+}
+.closing-cta:hover {
+    transform: translate(-2px, -2px);
+    box-shadow: 7px 7px 0 var(--highlighter);
+}
+.closing-cta:active {
+    transform: translate(2px, 2px);
+    box-shadow: 2px 2px 0 var(--highlighter);
+}
+
+/* ----------------------------------------------------------
+   7. FOOTER — torn edge
+---------------------------------------------------------- */
+.footer {
+    position: relative;
+    background: var(--ink);
+    color: var(--paper);
+    text-align: center;
+    padding: 52px var(--gutter) 40px;
+    margin-top: 40px;
+}
+
+/* deckled paper edge sitting over the top of the dark footer */
+.footer::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: -1px;
+    height: 12px;
+    background: radial-gradient(circle at 7px 12px, var(--paper) 7px, transparent 7.5px);
+    background-size: 16px 12px;
+    background-repeat: repeat-x;
+}
+
+.footer-line {
+    font-family: var(--display);
+    font-weight: 600;
+    font-size: 1.02rem;
+    margin-bottom: 8px;
+}
+
+.footer-meta {
+    font-family: var(--mono);
+    font-size: .74rem;
+    color: #8E9AB6;
+}
+
+/* ----------------------------------------------------------
+   8. PROCESSING OVERLAY
+---------------------------------------------------------- */
+.proc {
+    position: fixed;
+    inset: 0;
+    z-index: 60;
+    display: grid;
+    place-items: center;
+    padding: 24px;
+    background: rgba(27, 42, 74, .55);
+    backdrop-filter: blur(3px);
+}
+.proc[hidden] { display: none; }
+
+.proc-sheet {
+    width: min(480px, 100%);
+    background-color: var(--sheet);
+    border: 2px solid var(--ink);
+    border-radius: 4px;
+    box-shadow: 10px 10px 0 rgba(27, 42, 74, .25);
+    padding: 30px clamp(22px, 4vw, 34px);
+    background-image: repeating-linear-gradient(
+        to bottom,
+        transparent 0 calc(var(--rule-pitch) - 1px),
+        var(--rule) calc(var(--rule-pitch) - 1px) var(--rule-pitch)
+    );
+    background-position: 0 74px;
+    animation: sheet-in .35s var(--ease);
+}
+
+@keyframes sheet-in {
+    from { opacity: 0; transform: translateY(14px) scale(.98); }
+}
+
+.proc-kicker {
+    font-family: var(--mono);
+    font-size: .68rem;
+    text-transform: uppercase;
+    letter-spacing: .14em;
+    color: var(--graphite);
+    margin-bottom: 6px;
+}
+
+.proc-title {
+    font-family: var(--hand);
+    font-weight: 700;
+    font-size: 1.5rem;
+    margin-bottom: 20px;
+    min-height: 1.6em;
+}
+
+.proc-steps { margin-bottom: 22px; }
+
+.proc-steps li {
+    font-size: .88rem;
+    line-height: var(--rule-pitch);
+    color: var(--graphite);
+    padding-left: 26px;
+    position: relative;
+    transition: color .3s;
+}
+.proc-steps li::before {
+    content: "○";
+    position: absolute;
+    left: 4px;
+    color: var(--paper-edge);
+}
+.proc-steps li.is-active {
+    color: var(--ink);
+    font-weight: 600;
+}
+.proc-steps li.is-active::before {
+    content: "◐";
+    color: var(--pen-red);
+}
+.proc-steps li.is-done { color: var(--ink-soft); }
+.proc-steps li.is-done::before {
+    content: "✓";
+    color: var(--pen-red);
+    font-weight: 700;
+}
+
+.proc-track {
+    height: 8px;
+    background: var(--paper-edge);
+    border-radius: 99px;
+    overflow: hidden;
+    margin-bottom: 12px;
+}
+
+.proc-fill {
+    height: 100%;
+    width: 0;
+    background: var(--pen-red);
+    border-radius: 99px;
+    transition: width .5s var(--ease);
+}
+
+.proc-note {
+    font-size: .78rem;
+    color: var(--graphite);
+}
+
+/* ----------------------------------------------------------
+   9. SCROLL REVEAL
+---------------------------------------------------------- */
+.reveal {
+    opacity: 0;
+    transform: translateY(18px);
+    transition: opacity .6s var(--ease), transform .6s var(--ease);
+}
+.reveal.is-in {
+    opacity: 1;
+    transform: translateY(0) rotate(var(--tilt, 0deg));
+}
+
+/* keep the card tilt when it settles */
+.card.reveal.is-in { transform: rotate(var(--tilt, 0deg)); }
+
+/* ----------------------------------------------------------
+   10. RESPONSIVE
+---------------------------------------------------------- */
+@media (max-width: 900px) {
+    .nav-links { display: none; }
+
+    .spread { grid-template-columns: 1fr; }
+    .spine  { display: none; }
+
+    .page { min-height: 0; }
+    .page-left  { border-radius: 3px 3px 0 0; }
+    .page-right {
+        border-radius: 0 0 3px 3px;
+        border-top: 1.8px dashed var(--paper-edge);
+    }
+}
+
+@media (max-width: 620px) {
+    .paste-row {
+        flex-wrap: wrap;
+        padding: 12px;
+    }
+    .paste-row input { flex: 1 1 100%; padding: 6px 0 12px; }
+    .paste-btn { width: 100%; justify-content: center; }
+    .paste-icon { display: none; }
+
+    .step { gap: 14px; }
+    .step-num { width: 32px; height: 32px; font-size: .95rem; }
+}
+
+/* ----------------------------------------------------------
+   11. REDUCED MOTION
+---------------------------------------------------------- */
+@media (prefers-reduced-motion: reduce) {
+    html { scroll-behavior: auto; }
+
+    *, *::before, *::after {
+        animation-duration: .001s !important;
+        animation-delay: 0s !important;
+        transition-duration: .001s !important;
+    }
+
+    .spread { opacity: 1; transform: none; }
+    .reveal { opacity: 1; transform: none; }
+    .transcript p { opacity: 1; }
+    .hl, .notes mark { background-size: 104% .44em; }
+}
+
+/* ----------------------------------------------------------
+   12. ACCOUNTS · PATH TABS · SHELF  (added features, same ink/paper look)
+---------------------------------------------------------- */
+.nav-account { display: flex; align-items: center; gap: 12px; }
+
+.nav-who {
+    font-family: var(--mono);
+    font-size: .78rem;
+    color: var(--ink-soft);
+    max-width: 170px;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+
+.nav-ghost {
+    font-family: var(--display);
+    font-weight: 600;
+    font-size: .93rem;
+    color: var(--ink);
+    text-decoration: none;
+    padding: 9px 16px;
+    border: 1.8px solid var(--ink);
+    border-radius: 3px;
+    background: transparent;
+    transition: background .15s var(--ease);
+}
+.nav-ghost:hover { background: rgba(27, 42, 74, .07); }
+
+/* choose-a-path tabs — little notebook dividers over the link box */
+.pathtabs { display: flex; gap: 8px; margin-bottom: 14px; }
+.pathtab {
+    font-family: var(--display);
+    font-weight: 600;
+    font-size: .92rem;
+    color: var(--ink-soft);
+    background: var(--paper);
+    border: 1.8px solid var(--paper-edge);
+    border-bottom: none;
+    border-radius: 4px 4px 0 0;
+    padding: 9px 17px;
+    cursor: pointer;
+    transition: transform .14s var(--ease), background .14s, color .14s;
+}
+.pathtab:hover { color: var(--ink); }
+.pathtab.is-active {
+    color: var(--ink);
+    background: var(--sheet);
+    border-color: var(--ink);
+    box-shadow: 3px -3px 0 var(--highlighter);
+}
+
+/* shelf (history) — reuses .card; just needs an open link */
+.shelf { padding-top: clamp(40px, 6vw, 70px); }
+.card-open {
+    display: inline-block;
+    margin-top: 10px;
+    font-family: var(--display);
+    font-weight: 700;
+    font-size: .92rem;
+    color: var(--ink);
+    text-decoration: none;
+}
+.card-open:hover { color: var(--pen-red); }
+
+@media (max-width: 620px) {
+    .nav-who { display: none; }
+}
+
+/* ----------------------------------------------------------
+   13. AUTH (login / sign up) — same paper card
+---------------------------------------------------------- */
+.auth-wrap {
+    min-height: 100vh;
+    display: grid;
+    place-items: center;
+    padding: 30px var(--gutter);
+}
+.auth-card {
+    width: min(430px, 100%);
+    background-color: var(--sheet);
+    border: 2px solid var(--ink);
+    border-radius: 4px;
+    box-shadow: 8px 8px 0 var(--paper-edge);
+    padding: 34px clamp(24px, 4vw, 38px);
+    background-image: repeating-linear-gradient(
+        to bottom,
+        transparent 0 calc(var(--rule-pitch) - 1px),
+        var(--rule) calc(var(--rule-pitch) - 1px) var(--rule-pitch)
+    );
+    background-position: 0 104px;
+}
+.auth-brand { display: inline-flex; align-items: center; gap: 9px; text-decoration: none; color: var(--ink); margin-bottom: 14px; }
+.auth-title { font-size: 1.8rem; margin-bottom: 2px; }
+.auth-sub { font-family: var(--hand); color: var(--pen-red); font-size: 1.12rem; margin-bottom: 22px; transform: rotate(-.7deg); }
+.auth-field { display: block; margin-bottom: 15px; }
+.auth-field span {
+    display: block;
+    font-family: var(--mono);
+    font-size: .7rem;
+    text-transform: uppercase;
+    letter-spacing: .12em;
+    color: var(--graphite);
+    margin-bottom: 7px;
+}
+.auth-field input {
+    width: 100%;
+    font-family: var(--mono);
+    font-size: .95rem;
+    color: var(--ink);
+    background: var(--paper);
+    border: 2px solid var(--ink);
+    border-radius: 3px;
+    padding: 12px 14px;
+}
+.auth-field input:focus { outline: none; box-shadow: 4px 4px 0 var(--highlighter); }
+.auth-submit { width: 100%; justify-content: center; margin-top: 8px; }
+.auth-alt { margin-top: 18px; font-size: .9rem; color: var(--ink-soft); }
+.auth-alt a { color: var(--ink); font-weight: 600; }

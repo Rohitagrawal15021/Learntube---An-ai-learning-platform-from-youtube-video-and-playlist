@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>{{ graph.title if graph else 'Course map' }} — LearnTube</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&family=Archivo:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+<link rel="stylesheet" href="{{ url_for('static', filename='css/course.css') }}">
+</head>
+
+<body>
+
+<!-- the 3D canvas fills the screen -->
+<div id="graph"></div>
+<!-- always-on concept labels, projected over the canvas each frame -->
+<div id="glabels" aria-hidden="true"></div>
+
+<!-- top bar -->
+<header class="topbar">
+  <a class="brand" href="/">
+    <span class="brand-tab" aria-hidden="true"></span>
+    <span class="brand-name">LearnTube</span>
+  </a>
+  <div class="topbar-mid">
+    <p class="topbar-kicker">Course map</p>
+    <h1 class="topbar-title" id="courseTitle">{{ graph.title }}</h1>
+  </div>
+  <div class="topbar-right">
+    <span class="stat" id="statNodes">0 concepts</span>
+    <span class="stat" id="statEdges">0 links</span>
+  </div>
+</header>
+
+<!-- lecture legend -->
+<div class="legend" id="legend" aria-label="Lectures"></div>
+
+<!-- intro overlay: the "building the map" moment -->
+<div class="intro" id="intro">
+  <div class="intro-core" aria-hidden="true"></div>
+  <p class="intro-kicker">Building your knowledge graph</p>
+  <h2 class="intro-title" id="introTitle">Mapping the course<span class="dots"><i>.</i><i>.</i><i>.</i></span></h2>
+  <p class="intro-sub">Connecting every concept to what comes before it.</p>
+</div>
+
+<!-- concept detail panel -->
+<aside class="panel" id="panel" hidden>
+  <button class="panel-close" id="panelClose" aria-label="Close">×</button>
+  <span class="panel-chip" id="panelLecture">Lecture</span>
+  <h2 class="panel-title" id="panelTitle">Concept</h2>
+  <p class="panel-def" id="panelDef"></p>
+
+  <div class="panel-prereq" id="panelPrereq" hidden>
+    <p class="panel-prereq-h">Learn these first</p>
+    <ul class="panel-prereq-list" id="panelPrereqList"></ul>
+  </div>
+
+  <button class="panel-watch" id="panelWatch">
+    <span aria-hidden="true">▶</span> Watch this moment
+    <em id="panelTime"></em>
+  </button>
+</aside>
+
+<!-- video modal: jumps to the exact second -->
+<div class="vmodal" id="vmodal" hidden>
+  <div class="vmodal-sheet">
+    <div class="vmodal-head">
+      <h3 class="vmodal-title" id="vmodalTitle">Watch this moment</h3>
+      <button class="vmodal-close" id="vmodalClose" aria-label="Close">×</button>
+    </div>
+    <div class="vmodal-frame" id="vmodalFrame"></div>
+    <p class="vmodal-note" id="vmodalNote"></p>
+  </div>
+</div>
+
+<!-- controls hint -->
+<p class="hint">drag to rotate · scroll to zoom · click a concept</p>
+
+<script>window.__GRAPH__ = {{ graph | tojson | safe }};</script>
+<script src="https://unpkg.com/3d-force-graph@1.80.1/dist/3d-force-graph.min.js"></script>
+<script src="{{ url_for('static', filename='js/course.js') }}"></script>
+</body>
+</html>

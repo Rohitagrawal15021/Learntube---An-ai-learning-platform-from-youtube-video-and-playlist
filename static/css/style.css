@@ -1,0 +1,545 @@
+/* ==========================================================================
+   LearnTube — workspace shell
+   Tokens, the notebook rail, the desk header, and the divider tabs.
+   Pane-level styling lives in notes.css / flashcard.css.
+   ========================================================================== */
+
+/* ---------------------------------------------------------------- tokens */
+:root {
+    /* paper + ink — same stock as the landing page */
+    --paper:        #F1EEE4;
+    --sheet:        #FDFCF8;
+    --sheet-2:      #F7F5EF;
+    --paper-edge:   #E2DBCB;
+    --rule:         #CBDCEA;
+    --margin-line:  #E9A7AD;
+
+    --ink:          #1B2A4A;
+    --ink-soft:     #56668A;
+    --graphite:     #8B8676;
+
+    --pen-red:      #D24039;
+    --pen-blue:     #2C5AA0;
+    --pen-green:    #2F7D5C;
+    --highlighter:  #FFE45C;
+    --tape:         #E8DFC4;
+
+    /* divider tab colours — coloured card stock, one per section */
+    --tab-1: #F6C9C4;
+    --tab-2: #F7DFA6;
+    --tab-3: #C9DFC6;
+    --tab-4: #C3D6EF;
+    --tab-5: #DED2E8;
+
+    --display: 'Bricolage Grotesque', system-ui, sans-serif;
+    --body:    'Archivo', system-ui, sans-serif;
+    --hand:    'Kalam', 'Bricolage Grotesque', cursive;
+    --mono:    'DM Mono', ui-monospace, monospace;
+
+    --rail-w:  286px;
+    --ease:    cubic-bezier(.2, .7, .2, 1);
+    --spring:  cubic-bezier(.34, 1.56, .64, 1);
+
+    --shadow-lift: 0 1px 0 var(--paper-edge), 0 14px 30px -18px rgba(27, 42, 74, .34);
+
+    /* aliases the note renderer leans on */
+    --paper-bg:  var(--sheet);
+    --ink-color: var(--ink);
+}
+
+/* desk lamp off */
+[data-theme="dark"] {
+    --paper:        #10141B;
+    --sheet:        #191F29;
+    --sheet-2:      #1F2632;
+    --paper-edge:   #2B3442;
+    --rule:         #2C3949;
+    --margin-line:  #7A4149;
+
+    --ink:          #E8E3D6;
+    --ink-soft:     #9AA6BC;
+    --graphite:     #8D8778;
+
+    --pen-red:      #F0837B;
+    --pen-blue:     #8AB4EF;
+    --pen-green:    #74C79E;
+    --highlighter:  #6E5F1F;
+    --tape:         #3A3524;
+
+    --tab-1: #6E4A48;
+    --tab-2: #6B5B34;
+    --tab-3: #3F5A45;
+    --tab-4: #3A4C68;
+    --tab-5: #4C4159;
+
+    --shadow-lift: 0 1px 0 #0B0E13, 0 18px 34px -20px rgba(0, 0, 0, .8);
+}
+
+/* ---------------------------------------------------------------- reset */
+*, *::before, *::after { box-sizing: border-box; }
+
+/* several panels below set display:flex/grid, which would otherwise beat the
+   UA's [hidden] rule on specificity and leave them permanently visible */
+[hidden] { display: none !important; }
+
+html { -webkit-text-size-adjust: 100%; }
+
+body {
+    margin: 0;
+    min-height: 100dvh;
+    overflow-x: hidden;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: var(--body);
+    font-size: 16px;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+}
+
+/* the grain that keeps the paper from looking like flat #fff */
+body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 999;
+    opacity: .5;
+    background-image: radial-gradient(rgba(139, 134, 118, .16) .6px, transparent .7px);
+    background-size: 4px 4px;
+}
+[data-theme="dark"] body::before { opacity: .34; }
+
+button { font: inherit; color: inherit; }
+a { color: inherit; }
+
+:where(a, button, input, [tabindex]):focus-visible {
+    outline: 2.5px solid var(--pen-blue);
+    outline-offset: 3px;
+    border-radius: 4px;
+}
+
+.skip-link {
+    position: absolute; left: -9999px; top: 8px; z-index: 1000;
+    background: var(--sheet); color: var(--ink);
+    padding: 10px 16px; border-radius: 8px;
+    border: 1px solid var(--paper-edge);
+    font-weight: 600; text-decoration: none;
+}
+.skip-link:focus { left: 8px; }
+
+/* thin, paper-coloured scrollbars */
+.rail, .sheets, .pane { scrollbar-width: thin; scrollbar-color: var(--paper-edge) transparent; }
+.rail::-webkit-scrollbar, .sheets::-webkit-scrollbar { width: 10px; }
+.rail::-webkit-scrollbar-thumb, .sheets::-webkit-scrollbar-thumb {
+    background: var(--paper-edge); border-radius: 99px;
+    border: 3px solid transparent; background-clip: content-box;
+}
+
+/* ---------------------------------------------------------------- layout */
+.app { display: flex; min-height: 100dvh; }
+
+.desk {
+    flex: 1;
+    min-width: 0;
+    min-height: 100dvh;
+    display: flex;
+    flex-direction: column;
+    overflow: visible;
+}
+
+/* ================================================================ RAIL */
+.rail {
+    flex: 0 0 var(--rail-w);
+    width: var(--rail-w);
+    display: flex;
+    flex-direction: column;
+    gap: 22px;
+    padding: 26px 22px 22px;
+    overflow-y: auto;
+    background: var(--sheet-2);
+    border-right: 1px solid var(--paper-edge);
+    /* the stitched spine */
+    background-image: repeating-linear-gradient(to bottom,
+        transparent 0 12px, rgba(139, 134, 118, .28) 12px 20px);
+    background-size: 1px 100%;
+    background-position: right 8px top;
+    background-repeat: repeat-y;
+}
+
+.rail-brand {
+    display: flex; align-items: center; gap: 10px;
+    text-decoration: none;
+    font-family: var(--display);
+    font-weight: 800;
+    font-size: 1.16rem;
+    letter-spacing: -.02em;
+}
+.rail-tab {
+    width: 20px; height: 26px; flex: none;
+    background: var(--highlighter);
+    border: 1.5px solid var(--ink);
+    border-radius: 3px 8px 3px 3px;
+    box-shadow: 2px 2px 0 var(--ink);
+    transition: transform .3s var(--spring);
+}
+.rail-brand:hover .rail-tab { transform: rotate(-7deg) translateY(-1px); }
+
+/* --- revised ring --- */
+.revised {
+    display: flex; align-items: center; gap: 12px;
+    padding: 12px;
+    background: var(--sheet);
+    border: 1px solid var(--paper-edge);
+    border-radius: 12px;
+    box-shadow: var(--shadow-lift);
+}
+.revised-ring { position: relative; width: 46px; height: 46px; flex: none; }
+.revised-ring svg { width: 100%; height: 100%; transform: rotate(-90deg); }
+.revised-ring circle { fill: none; stroke-width: 4; }
+.ring-bg { stroke: var(--paper-edge); }
+.ring-fg {
+    stroke: var(--pen-green);
+    stroke-linecap: round;
+    stroke-dasharray: 119.4;
+    stroke-dashoffset: calc(119.4 - (119.4 * var(--pct)));
+    transition: stroke-dashoffset .6s var(--ease);
+}
+.revised-num {
+    position: absolute; inset: 0;
+    display: grid; place-items: center;
+    font-family: var(--mono);
+    font-size: .82rem; font-weight: 500;
+}
+.revised-copy { display: flex; flex-direction: column; line-height: 1.3; min-width: 0; }
+.revised-label { font-size: .74rem; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; color: var(--ink-soft); }
+.revised-count { font-family: var(--mono); font-size: .84rem; color: var(--ink); }
+
+/* --- contents --- */
+.rail-heading {
+    margin: 0;
+    font-family: var(--hand);
+    font-size: 1.02rem;
+    color: var(--graphite);
+    transform: rotate(-1.2deg);
+}
+.toc { flex: 1; min-height: 0; }
+.toc-list { list-style: none; margin: 0; padding: 0; counter-reset: toc; }
+
+.toc-item { position: relative; }
+.toc-link {
+    display: grid;
+    grid-template-columns: 22px 1fr;
+    gap: 8px;
+    align-items: start;
+    width: 100%;
+    text-align: left;
+    background: none;
+    border: 0;
+    border-left: 2px solid transparent;
+    padding: 7px 32px 7px 10px;
+    border-radius: 0 7px 7px 0;
+    font-size: .875rem;
+    line-height: 1.4;
+    color: var(--ink-soft);
+    cursor: pointer;
+    transition: color .18s, background .18s, border-color .18s;
+}
+.toc-link::before {
+    counter-increment: toc;
+    content: counter(toc, decimal-leading-zero);
+    font-family: var(--mono);
+    font-size: .72rem;
+    color: var(--graphite);
+    padding-top: 2px;
+}
+.toc-link:hover { color: var(--ink); background: rgba(139, 134, 118, .1); }
+.toc-item.is-current .toc-link {
+    color: var(--ink);
+    font-weight: 600;
+    border-left-color: var(--pen-red);
+    background: rgba(210, 64, 57, .07);
+}
+.toc-item.is-revised .toc-link { color: var(--graphite); }
+.toc-item.is-revised .toc-text {
+    background-image: linear-gradient(currentColor, currentColor);
+    background-repeat: no-repeat;
+    background-position: 0 .62em;
+    background-size: 100% 1.5px;
+}
+
+.toc-tick {
+    position: absolute;
+    top: 6px; right: 4px;
+    width: 22px; height: 22px;
+    display: grid; place-items: center;
+    background: none;
+    border: 1.5px solid var(--paper-edge);
+    border-radius: 5px;
+    font-size: .7rem;
+    color: transparent;
+    cursor: pointer;
+    opacity: 0;
+    transition: opacity .18s, color .18s, border-color .18s, transform .18s var(--spring);
+}
+.toc-item:hover .toc-tick, .toc-tick:focus-visible { opacity: 1; }
+.toc-tick:hover { border-color: var(--pen-green); color: var(--pen-green); }
+.toc-item.is-revised .toc-tick {
+    opacity: 1;
+    color: var(--pen-green);
+    border-color: var(--pen-green);
+    background: rgba(47, 125, 92, .1);
+}
+
+/* --- rail foot --- */
+.rail-foot {
+    display: flex; flex-direction: column; gap: 10px;
+    padding-top: 16px;
+    border-top: 1px dashed var(--paper-edge);
+}
+.rail-back {
+    font-family: var(--mono);
+    font-size: .8rem;
+    color: var(--ink-soft);
+    text-decoration: none;
+    padding: 2px 4px;
+}
+.rail-back:hover { color: var(--pen-red); }
+
+/* --- mobile rail toggle --- */
+.rail-open {
+    display: none;
+    position: fixed; z-index: 60;
+    top: 14px; left: 14px;
+    width: 42px; height: 42px;
+    background: var(--sheet);
+    border: 1px solid var(--paper-edge);
+    border-radius: 11px;
+    box-shadow: var(--shadow-lift);
+    cursor: pointer;
+}
+
+/* ================================================================ DESKHEAD */
+.deskhead {
+    flex: none;
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 20px 24px;
+    flex-wrap: wrap;
+    padding: 20px clamp(20px, 3vw, 40px) 13px;
+}
+.deskhead-main { min-width: 0; }
+.deskhead-kicker {
+    margin: 0 0 3px;
+    font-family: var(--hand);
+    font-size: .95rem;
+    color: var(--graphite);
+    transform: rotate(-.8deg);
+}
+.deskhead-title {
+    margin: 0;
+    font-family: var(--display);
+    font-size: clamp(1.3rem, 2.2vw, 1.74rem);
+    font-weight: 800;
+    letter-spacing: -.025em;
+    line-height: 1.14;
+    max-width: 34ch;
+    text-wrap: balance;
+}
+
+.chips { display: flex; gap: 7px; flex-wrap: wrap; list-style: none; margin: 0; padding: 0; }
+.chip {
+    display: flex;
+    align-items: baseline;
+    gap: 7px;
+    padding: 6px 12px;
+    background: var(--sheet);
+    border: 1px solid var(--paper-edge);
+    border-radius: 8px;
+    box-shadow: var(--shadow-lift);
+}
+.chip-k { font-size: .66rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--graphite); }
+.chip-v { font-family: var(--mono); font-size: .86rem; color: var(--ink); white-space: nowrap; }
+.chip--level .chip-v { color: var(--pen-red); font-weight: 500; }
+
+/* ================================================================ DIVIDER TABS
+   The signature. Real notebook dividers: the active tab drops its bottom
+   border so it reads as one continuous surface with the sheet below it.
+*/
+.dividers {
+    flex: none;
+    display: flex;
+    align-items: flex-end;
+    gap: 4px;
+    padding: 0 clamp(20px, 3vw, 40px);
+    margin-bottom: -1px;
+    position: relative;
+    z-index: 3;
+    overflow-x: auto;
+    scrollbar-width: none;
+}
+.dividers::-webkit-scrollbar { display: none; }
+
+.divider {
+    position: relative;
+    flex: none;
+    padding: 11px 20px 12px;
+    background: var(--sheet-2);
+    border: 1px solid var(--paper-edge);
+    border-bottom: 1px solid var(--paper-edge);
+    border-radius: 10px 10px 0 0;
+    font-family: var(--display);
+    font-size: .95rem;
+    font-weight: 600;
+    letter-spacing: -.01em;
+    color: var(--ink-soft);
+    cursor: pointer;
+    transform: translateY(4px);
+    transition: transform .22s var(--ease), color .2s, background .2s;
+}
+/* the coloured card-stock edge on top of each divider */
+.divider::before {
+    content: '';
+    position: absolute;
+    top: -1px; left: -1px; right: -1px;
+    height: 4px;
+    border-radius: 10px 10px 0 0;
+    background: var(--tabc, var(--paper-edge));
+    opacity: .55;
+    transition: opacity .2s, height .22s var(--ease);
+}
+.divider:nth-child(1) { --tabc: var(--tab-1); }
+.divider:nth-child(2) { --tabc: var(--tab-2); }
+.divider:nth-child(3) { --tabc: var(--tab-3); }
+.divider:nth-child(4) { --tabc: var(--tab-4); }
+.divider:nth-child(5) { --tabc: var(--tab-5); }
+
+.divider:hover { transform: translateY(1px); color: var(--ink); }
+.divider:hover::before { opacity: .9; }
+
+.divider.is-active {
+    background: var(--sheet);
+    border-bottom-color: var(--sheet);
+    color: var(--ink);
+    transform: translateY(0);
+    box-shadow: 0 -8px 18px -14px rgba(27, 42, 74, .5);
+}
+.divider.is-active::before { opacity: 1; height: 5px; }
+
+.divider--soon .divider-label::after {
+    content: '';
+    display: inline-block;
+    width: 6px; height: 6px;
+    margin-left: 7px;
+    vertical-align: 1px;
+    border-radius: 50%;
+    background: var(--graphite);
+    opacity: .7;
+}
+
+/* ================================================================ SHEETS */
+.sheets {
+    flex: 1 0 auto;
+    min-height: auto;
+    overflow: visible;
+    overflow-x: hidden;
+    position: relative;
+    background: var(--sheet);
+    border-top: 1px solid var(--paper-edge);
+    box-shadow: inset 0 1px 0 rgba(253, 252, 248, .7);
+}
+
+/* Full viewport layout mode when RAG Chatbot is active */
+body.chat-mode-active {
+    height: 100dvh;
+    overflow: hidden !important;
+}
+body.chat-mode-active .app {
+    height: 100dvh;
+    overflow: hidden;
+}
+body.chat-mode-active .desk {
+    height: 100dvh;
+    overflow: hidden;
+}
+/* Hide upper notebook header when RAG Chatbot is active so chat goes full screen */
+body.chat-mode-active .deskhead {
+    display: none !important;
+}
+body.chat-mode-active .dividers {
+    padding-top: 10px;
+}
+body.chat-mode-active .sheets,
+.sheets.chat-mode-active,
+.sheets:has(#paneChat.is-active) {
+    flex: 1 1 0 !important;
+    min-height: 0 !important;
+    height: 100% !important;
+    overflow: hidden !important;
+    display: flex !important;
+    flex-direction: column !important;
+}
+
+.pane { display: none; }
+/* the animation only plays the entrance — the visible state is the base
+   state, so a pane is never left blank if animations don't run */
+.pane.is-active { display: block; animation: paneIn .42s var(--ease); }
+#paneChat.is-active {
+    display: flex !important;
+    flex-direction: column !important;
+    flex: 1 1 0 !important;
+    min-height: 0 !important;
+    height: 100% !important;
+    overflow: hidden !important;
+}
+@keyframes paneIn {
+    from { opacity: 0; transform: translateY(10px); }
+}
+
+/* ================================================================ RESPONSIVE */
+@media (max-width: 1020px) {
+    :root { --rail-w: 244px; }
+    .deskhead { align-items: flex-start; }
+}
+
+@media (max-width: 860px) {
+    .rail {
+        position: fixed;
+        z-index: 70;
+        inset: 0 auto 0 0;
+        width: 280px;
+        transform: translateX(-102%);
+        transition: transform .3s var(--ease);
+        box-shadow: 20px 0 50px -24px rgba(0, 0, 0, .5);
+    }
+    body.rail-out .rail { transform: none; }
+    .rail-open { display: grid; place-items: center; }
+    .deskhead { padding: 14px 14px 10px 66px; gap: 12px; }
+    .deskhead-title { font-size: 1.18rem; }
+    .dividers { padding: 0 14px; }
+    .divider { padding: 10px 15px 11px; font-size: .88rem; }
+
+    /* four wrapping chips cost a third of a phone screen before the notes
+       start — one swipeable row instead */
+    .chips {
+        flex-wrap: nowrap;
+        overflow-x: auto;
+        gap: 6px;
+        width: 100%;
+        padding-bottom: 2px;
+        scrollbar-width: none;
+        -webkit-overflow-scrolling: touch;
+    }
+    .chips::-webkit-scrollbar { display: none; }
+    .chip { flex: none; padding: 5px 10px; }
+}
+
+/* ================================================================ MOTION OFF */
+@media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+        animation-duration: .01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: .01ms !important;
+        scroll-behavior: auto !important;
+    }
+}

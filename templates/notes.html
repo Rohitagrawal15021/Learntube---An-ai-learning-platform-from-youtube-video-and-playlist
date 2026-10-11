@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>{{ notes_json.title if notes_json else 'Your notebook' }} — LearnTube</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&family=Archivo:wght@400;500;600;700&family=Kalam:wght@400;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+<link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/notes.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/flashcard.css') }}">
+</head>
+
+<body>
+<a class="skip-link" href="#paneNotes">Skip to the notes</a>
+
+<div class="app">
+
+  <!-- ==================== LEFT RAIL — the notebook spine ==================== -->
+  <aside class="rail" id="rail">
+    <a class="rail-brand" href="/">
+      <span class="rail-tab" aria-hidden="true"></span>
+      <span class="rail-brand-name">LearnTube</span>
+    </a>
+
+    <div class="revised">
+      <div class="revised-ring" id="revisedRing" style="--pct:0">
+        <svg viewBox="0 0 44 44" aria-hidden="true">
+          <circle class="ring-bg" cx="22" cy="22" r="19"></circle>
+          <circle class="ring-fg" cx="22" cy="22" r="19"></circle>
+        </svg>
+        <span class="revised-num" id="revisedNum">0</span>
+      </div>
+      <div class="revised-copy">
+        <span class="revised-label">Sections revised</span>
+        <span class="revised-count" id="revisedCount">0 of 0</span>
+      </div>
+    </div>
+
+    <p class="rail-heading">Contents</p>
+    <nav class="toc" aria-label="Lecture contents">
+      <ol class="toc-list" id="tocList"></ol>
+    </nav>
+
+    <div class="rail-foot">
+      <a class="rail-back" href="/">← New lecture</a>
+    </div>
+  </aside>
+
+  <button class="rail-open" id="railOpen" type="button" aria-label="Show contents">☰</button>
+
+  <!-- ==================== THE DESK ==================== -->
+  <div class="desk">
+
+    <header class="deskhead">
+      <div class="deskhead-main">
+        <p class="deskhead-kicker">Your notebook</p>
+        <h1 class="deskhead-title" id="docTitle">Loading your notes…</h1>
+      </div>
+
+      <ul class="chips" id="chips">
+        <li class="chip chip--level"><span class="chip-k">Level</span><span class="chip-v" id="chipLevel">—</span></li>
+        <li class="chip"><span class="chip-k">Study time</span><span class="chip-v" id="chipTime">—</span></li>
+        <li class="chip"><span class="chip-k">Sections</span><span class="chip-v" id="chipSections">—</span></li>
+        <li class="chip"><span class="chip-k">Cards</span><span class="chip-v" id="chipCards">—</span></li>
+      </ul>
+    </header>
+
+    <!-- the signature: notebook divider tabs that merge into the sheet -->
+    <nav class="dividers" role="tablist" aria-label="Notebook sections">
+      <button class="divider is-active" role="tab" id="tabNotes"   aria-selected="true"  aria-controls="paneNotes"   data-pane="paneNotes">
+        <span class="divider-label">Notes</span>
+      </button>
+      <button class="divider" role="tab" id="tabSummary" aria-selected="false" aria-controls="paneSummary" data-pane="paneSummary">
+        <span class="divider-label">Summary</span>
+      </button>
+      <button class="divider" role="tab" id="tabCards"   aria-selected="false" aria-controls="paneCards"   data-pane="paneCards">
+        <span class="divider-label">Flashcards</span>
+      </button>
+      <button class="divider" role="tab" id="tabQuiz"    aria-selected="false" aria-controls="paneQuiz"    data-pane="paneQuiz">
+        <span class="divider-label">Quiz</span>
+      </button>
+      <button class="divider" role="tab" id="tabChat" aria-selected="false" aria-controls="paneChat" data-pane="paneChat">
+        <span class="divider-label">Ask</span>
+      </button>
+    </nav>
+
+    <div class="sheets" id="sheets">
+
+      <!-- ------------------------------ NOTES ------------------------------ -->
+      <section class="pane is-active" id="paneNotes" role="tabpanel" aria-labelledby="tabNotes" tabindex="-1">
+        <div class="read-progress" aria-hidden="true"><span id="readFill"></span></div>
+
+        <div class="notebook-page">
+          <div class="page-holes" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+          <div id="notesContainer" class="handwritten-body"></div>
+        </div>
+      </section>
+
+      <!-- ------------------------------ SUMMARY ------------------------------ -->
+      <section class="pane" id="paneSummary" role="tabpanel" aria-labelledby="tabSummary" tabindex="-1">
+        <div class="revision">
+
+          <div class="rev-lead sr" data-sr>
+            <p class="rev-eyebrow">The night-before version</p>
+            <p class="rev-abstract" id="summaryText"></p>
+          </div>
+
+          <ul class="rev-stats sr" data-sr id="revStats">
+            <li><b class="count" data-count="0" id="statSections">0</b><span>sections</span></li>
+            <li><b class="count" data-count="0" id="statDefs">0</b><span>definitions</span></li>
+            <li><b class="count" data-count="0" id="statCards">0</b><span>flashcards</span></li>
+            <li><b class="count" data-count="0" id="statTerms">0</b><span>key terms</span></li>
+          </ul>
+
+          <section class="rev-block sr" data-sr>
+            <h2 class="rev-h"><span class="rev-h-num">01</span> Takeaways</h2>
+            <ol class="takeaways" id="takeawaysList"></ol>
+          </section>
+
+          <section class="rev-block sr" data-sr>
+            <h2 class="rev-h"><span class="rev-h-num">02</span> Glossary</h2>
+            <div class="glossary" id="definitionsList"></div>
+          </section>
+
+          <section class="rev-block sr" data-sr>
+            <h2 class="rev-h"><span class="rev-h-num">03</span> Easy to mix up</h2>
+            <div class="mixups" id="mixupsList"></div>
+          </section>
+
+          <section class="rev-block sr" data-sr>
+            <h2 class="rev-h"><span class="rev-h-num">04</span> Terms to know</h2>
+            <ul class="termbank" id="termsList"></ul>
+          </section>
+
+        </div>
+      </section>
+
+      <!-- ------------------------------ FLASHCARDS ------------------------------ -->
+      <section class="pane" id="paneCards" role="tabpanel" aria-labelledby="tabCards" tabindex="-1">
+        <div class="deck-scene">
+
+          <header class="deck-head">
+            <div class="deck-pips" id="deckPips" aria-hidden="true"></div>
+            <div class="deck-meter">
+              <span class="deck-pos" id="deckPos">0 / 0</span>
+              <span class="deck-known" id="deckKnown">0 filed</span>
+            </div>
+          </header>
+
+          <div class="deck" id="deck">
+            <div class="deck-under deck-under--2" aria-hidden="true"></div>
+            <div class="deck-under deck-under--1" aria-hidden="true"></div>
+
+            <div class="card3d" id="card3d">
+              <!-- FRONT -->
+              <div class="face face--front">
+                <div class="face-top">
+                  <span class="ftype" id="fcType">concept</span>
+                  <span class="fdiff" id="fcDiff" data-d="easy">easy</span>
+                </div>
+                <p class="ftopic" id="fcTopic"></p>
+                <h2 class="fq" id="fcQuestion">Loading the deck…</h2>
+                <p class="fhint">Click the card, or press <kbd>Space</kbd></p>
+                <span class="dogear" aria-hidden="true"></span>
+              </div>
+
+              <!-- BACK -->
+              <div class="face face--back">
+                <p class="fback-label">Answer</p>
+                <p class="fa" id="fcAnswer"></p>
+                <div class="fverdict">
+                  <button class="verdict verdict--again" id="btnAgain" type="button">
+                    <span aria-hidden="true">↺</span> Needs another look
+                  </button>
+                  <button class="verdict verdict--got" id="btnGot" type="button">
+                    <span aria-hidden="true">✓</span> Got it
+                  </button>
+                </div>
+                <span class="dogear dogear--back" aria-hidden="true"></span>
+              </div>
+            </div>
+
+            <span class="deck-stamp" id="deckStamp" aria-hidden="true"></span>
+
+            <p class="deck-done" id="deckDone" hidden>
+              <span class="deck-done-h">Deck finished.</span>
+              <span class="deck-done-s" id="deckDoneS"></span>
+              <button class="deck-again" id="deckAgain" type="button">Shuffle and go again</button>
+            </p>
+          </div>
+
+          <div class="deck-foot">
+            <button class="deck-nav" id="btnPrev" type="button">← Back</button>
+            <p class="deck-keys">
+              <kbd>←</kbd> <kbd>→</kbd> move · <kbd>Space</kbd> flip · <kbd>1</kbd> again · <kbd>2</kbd> got it
+            </p>
+            <button class="deck-nav" id="btnNext" type="button">Skip →</button>
+          </div>
+
+        </div>
+      </section>
+
+      <!-- ------------------------------ QUIZ ------------------------------ -->
+      <section class="pane" id="paneQuiz" role="tabpanel" aria-labelledby="tabQuiz" tabindex="-1">
+        <div class="quiz">
+
+          <!-- start -->
+          <div class="quiz-start" id="quizStart">
+            <p class="quiz-stamp" aria-hidden="true">practice paper</p>
+            <h2 class="quiz-h">Sit a quick paper on this lecture.</h2>
+            <p class="quiz-p">
+              Questions are built from your own notes — every wrong option is a real
+              answer from somewhere else in the lecture, so guessing won't get you far.
+            </p>
+
+            <fieldset class="quiz-opt">
+              <legend>How long?</legend>
+              <div class="quiz-lens">
+                <label><input type="radio" name="qlen" value="5" checked><span>5 questions</span></label>
+                <label><input type="radio" name="qlen" value="10"><span>10 questions</span></label>
+                <label><input type="radio" name="qlen" value="0"><span>Everything</span></label>
+              </div>
+            </fieldset>
+
+            <button class="quiz-go" id="quizGo" type="button">Start the paper</button>
+            <p class="quiz-best" id="quizBest" hidden></p>
+          </div>
+
+          <!-- running -->
+          <div class="quiz-run" id="quizRun" hidden>
+            <header class="quiz-bar">
+              <span class="quiz-count" id="quizCount">Q1 / 5</span>
+              <div class="quiz-track"><span id="quizFill"></span></div>
+              <span class="quiz-score" id="quizScore">0 right</span>
+            </header>
+
+            <div class="qcard" id="qcard">
+              <p class="qtopic" id="qTopic"></p>
+              <h2 class="qtext" id="qText"></h2>
+              <ul class="qopts" id="qOpts"></ul>
+
+              <div class="qmark" id="qMark" hidden>
+                <svg class="qmark-glyph" id="qMarkGlyph" viewBox="0 0 48 48" aria-hidden="true"></svg>
+                <div class="qmark-copy">
+                  <p class="qmark-verdict" id="qVerdict"></p>
+                  <p class="qmark-why" id="qWhy"></p>
+                </div>
+              </div>
+
+              <button class="qnext" id="qNext" type="button" hidden>Next question →</button>
+            </div>
+          </div>
+
+          <!-- result -->
+          <div class="quiz-result" id="quizResult" hidden>
+            <div class="marksheet">
+              <p class="marksheet-kicker">Marked</p>
+              <div class="grade" id="grade">
+                <svg class="grade-ring" viewBox="0 0 120 120" aria-hidden="true">
+                  <path id="gradeCircle" d="M60,10 C88,10 112,32 112,60 C112,90 86,110 59,110 C30,110 8,88 8,59 C8,30 32,9 62,10"/>
+                </svg>
+                <span class="grade-pct" id="gradePct">0%</span>
+              </div>
+              <p class="marksheet-line" id="markLine"></p>
+              <p class="marksheet-note" id="markNote"></p>
+
+              <div class="weakspots" id="weakspots" hidden>
+                <p class="weak-h">Worth another read</p>
+                <ul class="weak-list" id="weakList"></ul>
+              </div>
+
+              <div class="marksheet-acts">
+                <button class="quiz-go" id="quizRetry" type="button">Sit it again</button>
+                <button class="quiz-alt" id="quizToNotes" type="button">Back to the notes</button>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </section>
+
+      <!-- ------------------------------ ASK (RAG Chatbot Pane) ------------------------------ -->
+      <section class="pane" id="paneChat" role="tabpanel" aria-labelledby="tabChat" tabindex="-1">
+        <div class="ask">
+          <div class="ask-thread" id="chatMessages" aria-live="polite" aria-label="Chat messages">
+            <div class="welcome-card bubble bubble--ai" id="welcomeBubble">
+              <div class="welcome-header">
+                <span class="welcome-icon">🎓</span>
+                <div>
+                  <h3 class="welcome-title">Hi, I am LearnTube AI Tutor! 👋</h3>
+                  <p class="welcome-subtitle">Ask me anything about this video lecture</p>
+                </div>
+              </div>
+              <p class="welcome-text">
+                I have indexed all transcript passages and notes from this video. Ask me to explain concepts, clarify doubts, or write code step-by-step!
+              </p>
+              <div class="chat-chips-grid">
+                <button type="button" class="chat-chip">💡 Explain the core concept step-by-step</button>
+                <button type="button" class="chat-chip">💻 Give me a practical code example</button>
+                <button type="button" class="chat-chip">📝 What are the top exam takeaways?</button>
+                <button type="button" class="chat-chip">🔍 Summarize Section 1 in simple terms</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="chat-form-wrap">
+            <form class="chat-form" id="videoChatForm">
+              <label for="chatQuestion" class="sr-only">Your question</label>
+              <div class="input-box-container">
+                <textarea id="chatQuestion" name="question" rows="1" maxlength="1500" placeholder="Ask a question about this lecture (e.g. explain concepts, write code...)" required></textarea>
+                <button type="submit" id="chatSend" title="Send question">
+                  <span>Ask</span>
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
+                </button>
+              </div>
+            </form>
+            <p class="chat-status" id="chatStatus" role="status">
+              ● Ready — LearnTube AI Tutor is online.
+            </p>
+          </div>
+        </div>
+      </section>
+
+    </div>
+  </div>
+</div>
+
+<script>const lectureData = {{ notes_json | tojson | safe }};</script>
+<script>window.chatVideoId = {{ chat_video_id | tojson | safe }};</script>
+<script>
+  // Persist last-viewed video so the home page can show a "continue" chip
+  try {
+    var _vid = window.chatVideoId;
+    var _title = lectureData && lectureData.title ? lectureData.title : null;
+    if (_vid && _title) {
+      localStorage.setItem('lt_last_video', JSON.stringify({ id: _vid, title: _title }));
+    }
+  } catch(e) {}
+</script>
+<script src="{{ url_for('static', filename='js/notes.js') }}"></script>
+<script src="{{ url_for('static', filename='js/chat.js') }}"></script>
+</body>
+</html>

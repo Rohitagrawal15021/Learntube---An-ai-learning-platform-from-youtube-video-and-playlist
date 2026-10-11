@@ -1,0 +1,404 @@
+/* ==========================================================================
+   LearnTube — the flashcard deck
+   Index cards on a desk. The corner peels, the card turns, and the stack
+   behind it visibly thins as you work through it.
+   ========================================================================== */
+
+:root {
+    --fc-card:  #FDFBF4;
+    --fc-card-2:#F6F2E6;
+    --fc-fold:  #E4DCC7;
+    --fc-rule:  #D8CFB8;
+    --fc-edge:  rgba(27, 42, 74, .16);
+}
+[data-theme="dark"] {
+    --fc-card:  #1C232E;
+    --fc-card-2:#161C25;
+    --fc-fold:  #2C3543;
+    --fc-rule:  #333D4C;
+    --fc-edge:  rgba(0, 0, 0, .6);
+}
+
+.deck-scene {
+    max-width: 680px;
+    margin: 0 auto;
+    padding: 36px clamp(18px, 4vw, 40px) 90px;
+}
+
+/* ------------------------------------------------------------------ header */
+.deck-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 18px;
+    margin-bottom: 22px;
+    flex-wrap: wrap;
+}
+
+/* one pip per card — the whole deck at a glance */
+.deck-pips { display: flex; gap: 4px; flex-wrap: wrap; }
+.pip {
+    width: 15px; height: 6px;
+    border-radius: 3px;
+    background: var(--paper-edge);
+    transition: background .28s, transform .28s var(--spring), width .28s var(--ease);
+}
+.pip.is-got   { background: var(--pen-green); }
+.pip.is-again { background: var(--pen-red); }
+.pip.is-now   { width: 26px; background: var(--ink); transform: translateY(-1px); }
+
+.deck-meter { display: flex; align-items: baseline; gap: 12px; }
+.deck-pos {
+    font-family: var(--mono);
+    font-size: .9rem;
+    color: var(--ink);
+    font-variant-numeric: tabular-nums;
+}
+.deck-known {
+    font-family: var(--hand);
+    font-size: 1.02rem;
+    color: var(--pen-green);
+    transform: rotate(-1deg);
+}
+
+/* ------------------------------------------------------------------ the stack */
+.deck {
+    position: relative;
+    perspective: 1600px;
+    min-height: 400px;
+    margin-bottom: 24px;
+}
+.deck.is-deal { animation: dealIn .46s var(--ease); }
+@keyframes dealIn {
+    from { opacity: 0; transform: translateX(calc(var(--dir, 1) * 46px)) rotate(calc(var(--dir, 1) * 1.3deg)); }
+}
+.deck.is-lift { animation: lift .72s var(--ease); }
+@keyframes lift {
+    45% { transform: translateY(-12px) scale(1.018); }
+}
+
+/* the cards underneath, fanned like a real stack */
+.deck-under {
+    position: absolute;
+    left: 0; right: 0;
+    height: 100%;
+    background: var(--fc-card-2);
+    border: 1px solid var(--paper-edge);
+    border-radius: 16px;
+    transition: opacity .4s var(--ease), transform .4s var(--ease);
+}
+.deck-under--1 { transform: translate(9px, 9px) rotate(1.1deg); }
+.deck-under--2 { transform: translate(17px, 17px) rotate(2.2deg); opacity: .6; }
+.deck.no-1 .deck-under--1 { opacity: 0; transform: translate(0, 0) rotate(0deg); }
+.deck.no-2 .deck-under--2 { opacity: 0; transform: translate(0, 0) rotate(0deg); }
+
+/* ------------------------------------------------------------------ the card */
+.card3d {
+    position: relative;
+    width: 100%;
+    min-height: 400px;
+    transform-style: preserve-3d;
+    transition: transform .72s cubic-bezier(.5, .05, .2, 1);
+    cursor: pointer;
+}
+.card3d.is-flipped { transform: rotateY(180deg); }
+
+.face {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    min-height: 400px;
+    padding: 28px clamp(22px, 3.4vw, 34px) 30px;
+    background: var(--fc-card);
+    border: 1px solid var(--paper-edge);
+    border-radius: 16px;
+    -webkit-backface-visibility: hidden;
+    backface-visibility: hidden;
+    box-shadow: 0 2px 0 var(--paper-edge), 0 30px 50px -32px var(--fc-edge);
+    overflow: hidden;
+}
+
+/* the faint ruling that makes it an index card, not a div */
+.face::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background-image: repeating-linear-gradient(to bottom,
+        transparent 0 30px, var(--fc-rule) 30px 31px);
+    background-position: 0 74px;
+    opacity: .5;
+}
+
+.face--back { transform: rotateY(180deg); }
+
+/* --- front --- */
+.face-top {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding-bottom: 12px;
+    border-bottom: 2px solid var(--pen-red);
+}
+.ftype {
+    font-family: var(--mono);
+    font-size: .72rem;
+    letter-spacing: .12em;
+    text-transform: uppercase;
+    color: var(--pen-red);
+}
+.fdiff {
+    padding: 4px 11px;
+    border-radius: 20px;
+    font-size: .68rem;
+    font-weight: 800;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+}
+.fdiff[data-d="easy"]   { background: rgba(47, 125, 92, .15);  color: var(--pen-green); }
+.fdiff[data-d="medium"] { background: rgba(255, 228, 92, .34); color: #8A6A12; }
+.fdiff[data-d="hard"]   { background: rgba(210, 64, 57, .15);  color: var(--pen-red); }
+[data-theme="dark"] .fdiff[data-d="medium"] { background: rgba(255, 228, 92, .16); color: #E8CE72; }
+
+.ftopic {
+    position: relative; z-index: 1;
+    margin: 16px 0 0;
+    font-family: var(--hand);
+    font-size: 1.06rem;
+    color: var(--graphite);
+    transform: rotate(-.7deg);
+}
+.fq {
+    position: relative; z-index: 1;
+    margin: 10px 0 0;
+    font-family: var(--display);
+    font-size: clamp(1.16rem, 2.4vw, 1.52rem);
+    font-weight: 600;
+    line-height: 1.38;
+    letter-spacing: -.018em;
+    text-wrap: pretty;
+}
+.fhint {
+    position: relative; z-index: 1;
+    margin: auto 0 0;
+    font-family: var(--mono);
+    font-size: .76rem;
+    color: var(--graphite);
+}
+.fhint kbd { margin: 0 1px; }
+
+/* --- back --- */
+.fback-label {
+    position: relative; z-index: 1;
+    margin: 0 0 14px;
+    padding-bottom: 12px;
+    border-bottom: 2px solid var(--pen-green);
+    font-family: var(--mono);
+    font-size: .72rem;
+    letter-spacing: .12em;
+    text-transform: uppercase;
+    color: var(--pen-green);
+}
+.fa {
+    position: relative; z-index: 1;
+    margin: 0;
+    min-height: 0;
+    overflow-y: auto;
+    font-size: clamp(1rem, 1.9vw, 1.1rem);
+    line-height: 1.66;
+    text-wrap: pretty;
+}
+.card3d.is-flipped .face--back .fa { animation: markIn .5s .3s var(--ease); }
+
+.fverdict {
+    position: relative; z-index: 1;
+    display: flex;
+    gap: 10px;
+    margin: auto 0 0;
+    padding-top: 22px;
+    flex-wrap: wrap;
+}
+.verdict {
+    flex: 1 1 150px;
+    padding: 13px 16px;
+    border-radius: 12px;
+    font-family: var(--display);
+    font-size: .92rem;
+    font-weight: 700;
+    letter-spacing: -.01em;
+    cursor: pointer;
+    border: 1.5px solid transparent;
+    transition: transform .14s var(--ease), box-shadow .14s var(--ease), background .18s;
+}
+.verdict span { margin-right: 5px; }
+.verdict--again {
+    background: transparent;
+    border-color: var(--pen-red);
+    color: var(--pen-red);
+}
+.verdict--again:hover { background: rgba(210, 64, 57, .1); transform: translateY(-2px); }
+.verdict--got {
+    background: var(--pen-green);
+    color: #F4FBF6;
+    box-shadow: 0 4px 0 #22624A;
+}
+.verdict--got:hover { transform: translateY(-2px); box-shadow: 0 6px 0 #22624A; }
+.verdict--got:active { transform: translateY(4px); box-shadow: 0 0 0 #22624A; }
+
+/* --- the peeling corner: the reason it feels like paper --- */
+.dogear {
+    position: absolute;
+    right: -1px; bottom: -1px;
+    z-index: 2;
+    width: 40px; height: 40px;
+    border-radius: 0 0 15px 0;
+    background:
+        linear-gradient(to top left, var(--fc-fold) 0 49.6%, transparent 49.6%);
+    box-shadow: inset -6px -6px 12px -6px var(--fc-edge);
+    transition: width .34s var(--spring), height .34s var(--spring), filter .34s;
+}
+.dogear::before {
+    content: '';
+    position: absolute;
+    right: 0; bottom: 0;
+    width: 100%; height: 100%;
+    background: linear-gradient(to top left, rgba(255, 255, 255, .5) 0 49.6%, transparent 49.6%);
+    border-radius: 0 0 15px 0;
+    opacity: .5;
+}
+[data-theme="dark"] .dogear::before { opacity: .1; }
+
+.card3d:hover .dogear, .card3d:focus-visible .dogear { width: 64px; height: 64px; }
+.dogear--back { background: linear-gradient(to top left, var(--fc-fold) 0 49.6%, transparent 49.6%); }
+
+/* ------------------------------------------------------------------ stamps */
+.deck-stamp {
+    position: absolute;
+    z-index: 5;
+    top: 42%; left: 50%;
+    padding: 8px 20px;
+    border: 3px solid currentColor;
+    border-radius: 6px;
+    font-family: var(--body);
+    font-size: 1.02rem;
+    font-weight: 800;
+    letter-spacing: .22em;
+    text-transform: uppercase;
+    pointer-events: none;
+    opacity: 0;
+    transform: translate(-50%, -50%) rotate(-11deg);
+}
+.deck-stamp.is-on { animation: stampHit .8s var(--ease); }
+.deck-stamp.is-got   { color: var(--pen-green); }
+.deck-stamp.is-again { color: var(--pen-red); }
+@keyframes stampHit {
+    0%   { opacity: 0; transform: translate(-50%, -50%) rotate(-24deg) scale(2.1); }
+    26%  { opacity: .92; transform: translate(-50%, -50%) rotate(-11deg) scale(1); }
+    70%  { opacity: .92; }
+    100% { opacity: 0; transform: translate(-50%, -50%) rotate(-11deg) scale(1); }
+}
+
+/* ------------------------------------------------------------------ finished */
+.deck-done {
+    position: absolute;
+    inset: 0;
+    z-index: 6;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    text-align: center;
+    padding: 34px;
+    background: var(--fc-card);
+    border: 1px solid var(--paper-edge);
+    border-radius: 16px;
+    box-shadow: 0 2px 0 var(--paper-edge), 0 30px 50px -32px var(--fc-edge);
+    animation: dealIn .5s var(--ease);
+    margin: 0;
+}
+.deck-done-h {
+    font-family: var(--display);
+    font-size: clamp(1.4rem, 3vw, 1.9rem);
+    font-weight: 800;
+    letter-spacing: -.03em;
+}
+.deck-done-s { color: var(--ink-soft); max-width: 34ch; line-height: 1.6; }
+.deck-again {
+    margin-top: 12px;
+    padding: 13px 26px;
+    background: var(--ink);
+    color: var(--sheet);
+    border: 0;
+    border-radius: 12px;
+    font-family: var(--display);
+    font-size: .95rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: transform .16s var(--ease);
+}
+.deck-again:hover { transform: translateY(-2px); }
+
+/* ------------------------------------------------------------------ footer */
+.deck-foot {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 14px;
+    flex-wrap: wrap;
+}
+.deck-nav {
+    padding: 10px 18px;
+    background: none;
+    border: 1.5px solid var(--paper-edge);
+    border-radius: 10px;
+    font-size: .88rem;
+    font-weight: 600;
+    color: var(--ink-soft);
+    cursor: pointer;
+    transition: border-color .18s, color .18s, transform .18s var(--ease);
+}
+.deck-nav:hover:not(:disabled) { border-color: var(--ink-soft); color: var(--ink); }
+.deck-nav:disabled { opacity: .4; cursor: not-allowed; }
+
+.deck-keys {
+    margin: 0;
+    font-family: var(--mono);
+    font-size: .74rem;
+    color: var(--graphite);
+}
+kbd {
+    display: inline-block;
+    padding: 1px 6px;
+    background: var(--sheet-2);
+    border: 1px solid var(--paper-edge);
+    border-bottom-width: 2px;
+    border-radius: 5px;
+    font-family: var(--mono);
+    font-size: .72rem;
+    color: var(--ink-soft);
+}
+
+/* ------------------------------------------------------------------ small screens */
+@media (max-width: 700px) {
+    .deck-scene { padding: 24px 14px 80px; }
+    .deck, .card3d, .face { min-height: 430px; }
+    .deck-under--1, .deck-under--2 { display: none; }
+    .deck-keys { display: none; }
+    .deck-foot { justify-content: space-between; }
+    .verdict { flex: 1 1 100%; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .card3d { transition: none; }
+    .card3d.is-flipped { transform: none; }
+    .card3d.is-flipped .face--front { visibility: hidden; }
+    .card3d.is-flipped .face--back  { transform: none; }
+    .face--back { visibility: hidden; }
+    .card3d.is-flipped .face--back  { visibility: visible; }
+    .deck-stamp.is-on { animation: none; opacity: .9; }
+}

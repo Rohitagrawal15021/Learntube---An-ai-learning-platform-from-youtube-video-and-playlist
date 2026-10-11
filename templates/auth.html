@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>{{ 'Sign up' if mode == 'signup' else 'Log in' }} — LearnTube</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&family=Archivo:wght@400;500;600;700&family=Kalam:wght@400;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/landing.css') }}">
+</head>
+<body>
+<div class="auth-wrap">
+  <div class="auth-card">
+    <a class="auth-brand" href="/">
+      <span class="brand-tab" aria-hidden="true"></span>
+      <span class="brand-name">LearnTube</span>
+    </a>
+
+    {% if mode == 'signup' %}
+      <h1 class="auth-title">Make a notebook</h1>
+      <p class="auth-sub">so your courses are here next time</p>
+    {% else %}
+      <h1 class="auth-title">Welcome back</h1>
+      <p class="auth-sub">pick up where you left off</p>
+    {% endif %}
+
+    {% if error %}<p class="paste-error" role="alert">⚠️ {{ error }}</p>{% endif %}
+
+    <form method="POST" action="{{ url_for('signup') if mode == 'signup' else url_for('login') }}">
+      {% if next %}<input type="hidden" name="next" value="{{ next }}">{% endif %}
+      <label class="auth-field">
+        <span>Email</span>
+        <input type="email" name="email" value="{{ email or '' }}" autocomplete="email" required autofocus>
+      </label>
+      <label class="auth-field">
+        <span>Password</span>
+        <input type="password" name="password" autocomplete="{{ 'new-password' if mode == 'signup' else 'current-password' }}" minlength="6" required>
+      </label>
+      <button type="submit" class="paste-btn auth-submit">
+        {{ 'Create my notebook' if mode == 'signup' else 'Log in' }}
+      </button>
+    </form>
+
+    {% if mode == 'signup' %}
+      <p class="auth-alt">Already have one? <a href="{{ url_for('login') }}">Log in</a></p>
+    {% else %}
+      <p class="auth-alt">New here? <a href="{{ url_for('signup') }}">Make a notebook</a></p>
+    {% endif %}
+  </div>
+</div>
+</body>
+</html>

@@ -1,0 +1,565 @@
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+
+body {
+
+    font-family:
+        -apple-system,
+        BlinkMacSystemFont,
+        "Segoe UI",
+        sans-serif;
+
+    background: #f7f7f5;
+
+    color: #202020;
+
+}
+
+
+/* ================= TOP BAR ================= */
+
+.topbar {
+
+    height: 72px;
+
+    background: rgba(255,255,255,0.95);
+
+    border-bottom: 1px solid #e8e8e8;
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: space-between;
+
+    padding: 0 42px;
+
+    position: sticky;
+
+    top: 0;
+
+    z-index: 20;
+
+}
+
+
+.logo {
+
+    font-size: 21px;
+
+    font-weight: 700;
+
+    display: flex;
+
+    align-items: center;
+
+    gap: 9px;
+
+}
+
+
+.logo span {
+
+    color: #5d5fe8;
+
+    font-size: 25px;
+
+}
+
+
+.top-actions {
+
+    display: flex;
+
+    gap: 12px;
+
+    align-items: center;
+
+}
+
+
+.icon-button {
+
+    border: none;
+
+    background: transparent;
+
+    font-size: 20px;
+
+    cursor: pointer;
+
+}
+
+
+.new-button {
+
+    border: none;
+
+    background: #5267e8;
+
+    color: white;
+
+    padding: 11px 20px;
+
+    border-radius: 10px;
+
+    font-size: 15px;
+
+    font-weight: 600;
+
+    cursor: pointer;
+
+}
+
+
+.new-button:hover {
+
+    background: #4055d6;
+
+}
+
+
+/* ================= DASHBOARD ================= */
+
+.dashboard {
+
+    max-width: 1400px;
+
+    margin: auto;
+
+    padding: 55px 55px;
+
+}
+
+
+.page-header h1 {
+
+    font-family: Georgia, serif;
+
+    font-size: 42px;
+
+    margin-bottom: 22px;
+
+}
+
+
+/* ================= TABS ================= */
+
+.tabs {
+
+    display: flex;
+
+    gap: 30px;
+
+    border-bottom: 1px solid #ddd;
+
+    margin-bottom: 35px;
+
+}
+
+
+.tab {
+
+    border: none;
+
+    background: transparent;
+
+    padding: 12px 2px;
+
+    font-size: 15px;
+
+    color: #9a9a9a;
+
+    cursor: pointer;
+
+    position: relative;
+
+}
+
+
+.tab.active {
+
+    color: #222;
+
+    font-weight: 600;
+
+}
+
+
+.tab.active::after {
+
+    content: "";
+
+    position: absolute;
+
+    bottom: -1px;
+
+    left: 0;
+
+    right: 0;
+
+    height: 3px;
+
+    background: #5270e8;
+
+    border-radius: 5px;
+
+}
+
+
+/* ================= GRID ================= */
+
+.notes-grid {
+
+    display: grid;
+
+    grid-template-columns:
+        repeat(auto-fill, minmax(270px, 1fr));
+
+    gap: 30px;
+
+}
+
+
+/* ================= NOTE CARD ================= */
+
+.note-card {
+
+    text-decoration: none;
+
+    color: inherit;
+
+    background: white;
+
+    border-radius: 18px;
+
+    overflow: hidden;
+
+    box-shadow:
+        0 5px 20px rgba(0,0,0,0.07);
+
+    transition: 0.25s;
+
+}
+
+
+.note-card:hover {
+
+    transform: translateY(-6px);
+
+    box-shadow:
+        0 14px 30px rgba(0,0,0,0.12);
+
+}
+
+
+/* ================= NOTE PREVIEW ================= */
+
+.note-preview {
+
+    height: 310px;
+
+    background:
+        repeating-linear-gradient(
+            to bottom,
+            #fff 0px,
+            #fff 27px,
+            #e9edf8 28px
+        );
+
+    padding: 20px;
+
+    overflow: hidden;
+
+    position: relative;
+
+}
+
+
+.preview-header {
+
+    display: flex;
+
+    justify-content: space-between;
+
+    font-weight: 700;
+
+    font-size: 12px;
+
+}
+
+
+.preview-title {
+
+    max-width: 200px;
+
+    overflow: hidden;
+
+    white-space: nowrap;
+
+    text-overflow: ellipsis;
+
+}
+
+
+.preview-content {
+
+    margin-top: 35px;
+
+}
+
+
+.fake-heading {
+
+    font-family: Georgia, serif;
+
+    font-size: 20px;
+
+    font-weight: 700;
+
+    margin-bottom: 18px;
+
+    color: #30343c;
+
+}
+
+
+.fake-lines {
+
+    display: flex;
+
+    flex-direction: column;
+
+    gap: 8px;
+
+}
+
+
+.fake-lines span {
+
+    display: block;
+
+    height: 5px;
+
+    background: #777;
+
+    opacity: 0.35;
+
+    border-radius: 10px;
+
+}
+
+
+.fake-lines span:nth-child(1) {
+
+    width: 95%;
+
+}
+
+
+.fake-lines span:nth-child(2) {
+
+    width: 85%;
+
+}
+
+
+.fake-lines span:nth-child(3) {
+
+    width: 92%;
+
+}
+
+
+.fake-lines span:nth-child(4) {
+
+    width: 70%;
+
+}
+
+
+.fake-lines.short {
+
+    margin-top: 20px;
+
+}
+
+
+.highlight-box {
+
+    margin: 22px 0;
+
+    padding: 9px;
+
+    background: #fff2a8;
+
+    width: 65%;
+
+    font-weight: 700;
+
+    font-size: 12px;
+
+    transform: rotate(-1deg);
+
+}
+
+
+/* ================= CARD INFO ================= */
+
+.note-info {
+
+    padding: 18px 20px;
+
+    display: flex;
+
+    justify-content: space-between;
+
+    gap: 10px;
+
+}
+
+
+.note-info h3 {
+
+    font-size: 17px;
+
+    margin-bottom: 4px;
+
+}
+
+
+.note-info p {
+
+    color: #999;
+
+    font-size: 12px;
+
+}
+
+
+.note-category {
+
+    background: #fff0b8;
+
+    color: #665400;
+
+    padding: 5px 10px;
+
+    height: fit-content;
+
+    border-radius: 20px;
+
+    font-size: 11px;
+
+    white-space: nowrap;
+
+}
+
+
+/* ================= EMPTY ================= */
+
+.empty-card {
+
+    border: 2px dashed #d7d7d7;
+
+    border-radius: 18px;
+
+    min-height: 390px;
+
+    display: flex;
+
+    flex-direction: column;
+
+    align-items: center;
+
+    justify-content: center;
+
+    text-align: center;
+
+    padding: 35px;
+
+    color: #888;
+
+}
+
+
+.empty-icon {
+
+    width: 55px;
+
+    height: 55px;
+
+    border-radius: 50%;
+
+    background: #eef1ff;
+
+    color: #5267e8;
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: center;
+
+    font-size: 30px;
+
+    margin-bottom: 15px;
+
+}
+
+
+.empty-card h3 {
+
+    color: #333;
+
+    margin-bottom: 8px;
+
+}
+
+
+.empty-card p {
+
+    font-size: 13px;
+
+    line-height: 1.6;
+
+    max-width: 220px;
+
+}
+
+
+/* ================= MOBILE ================= */
+
+@media(max-width:700px) {
+
+    .dashboard {
+
+        padding: 30px 18px;
+
+    }
+
+    .topbar {
+
+        padding: 0 18px;
+
+    }
+
+    .page-header h1 {
+
+        font-size: 32px;
+
+    }
+
+    .tabs {
+
+        gap: 18px;
+
+        overflow-x: auto;
+
+    }
+
+}

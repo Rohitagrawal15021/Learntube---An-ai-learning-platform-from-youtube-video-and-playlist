@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LearnTube — turn a lecture or a whole playlist into notes you'll revise</title>
+<meta name="description" content="Paste a YouTube playlist for an interactive course map, or a single lecture for notes, a summary, flashcards, and a quiz.">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&family=Archivo:wght@400;500;600;700&family=Kalam:wght@400;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+<link rel="stylesheet" href="{{ url_for('static', filename='css/landing.css') }}">
+</head>
+
+<body>
+<a class="skip-link" href="#paste">Skip to the link box</a>
+
+{% set hist = history|default([]) %}
+
+<!-- ============ NAV ============ -->
+<header class="nav">
+  <a class="brand" href="/">
+    <span class="brand-tab" aria-hidden="true"></span>
+    <span class="brand-name">LearnTube</span>
+  </a>
+
+  <nav class="nav-links" aria-label="Sections">
+    <a href="#get">What you get</a>
+    <a href="#how">How it works</a>
+  </nav>
+
+  <div class="nav-account">
+    {% if current_user %}
+      <span class="nav-who" title="{{ current_user.email }}">{{ current_user.email }}</span>
+      <a class="nav-ghost" href="{{ url_for('logout') }}">Log out</a>
+    {% else %}
+      <a class="nav-ghost" href="{{ url_for('login') }}">Log in</a>
+      <a class="nav-cta" href="{{ url_for('signup') }}">Sign up</a>
+    {% endif %}
+  </div>
+</header>
+
+<main>
+
+<!-- ============ HERO ============ -->
+<section class="hero">
+  <div class="hero-copy">
+    <p class="eyebrow">for the course you keep meaning to finish</p>
+
+    <h1 class="hero-title">
+      Watch it once.<br>
+      Revise from <span class="hl">the notes</span>.
+    </h1>
+
+    <p class="hero-sub">
+      Paste a whole <b>playlist</b> for an interactive map of the course — or a
+      single <b>lecture</b> for structured notes, a summary, flashcards, a quiz,
+      and a tutor that answers from the transcript.
+    </p>
+
+    <!-- choose a path -->
+    <div class="pathtabs" role="tablist" aria-label="What are you studying?">
+      <button class="pathtab is-active" id="tabVideo" type="button" role="tab"
+              aria-selected="true" data-target="paste">▶ A single lecture</button>
+      <button class="pathtab" id="tabPlaylist" type="button" role="tab"
+              aria-selected="false" data-target="formPlaylist">▦ A whole playlist</button>
+    </div>
+
+    <!-- single lecture -->
+    <form id="paste" class="paste" action="{{ url_for('process_video') }}" method="POST" novalidate>
+      <label class="paste-label" for="youtube_url">YouTube lecture link</label>
+      <div class="paste-row">
+        <span class="paste-icon" aria-hidden="true">▶</span>
+        <input id="youtube_url" name="youtube_url" type="text" inputmode="url"
+               autocomplete="off" spellcheck="false" placeholder="Paste a YouTube lecture link" required>
+        <button type="submit" class="paste-btn">
+          <span>Make my notes</span>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12h14M13 6l6 6-6 6"/></svg>
+        </button>
+      </div>
+      <p class="paste-hint">
+        No link handy?
+        <button type="button" class="sample-chip" id="sampleChip">Open the sample — {{ sample_title|default('Sample Notebook') }}</button>
+        <button type="button" class="sample-chip sample-chip--continue" id="continueChip" hidden>↩ Continue: <span id="continueTitle"></span></button>
+      </p>
+    </form>
+
+    <!-- whole playlist -->
+    <form id="formPlaylist" class="paste" action="{{ url_for('open_playlist') }}" method="POST" novalidate hidden>
+      <label class="paste-label" for="playlist_url">YouTube playlist link</label>
+      <div class="paste-row">
+        <span class="paste-icon" aria-hidden="true">▦</span>
+        <input id="playlist_url" name="playlist_url" type="text" inputmode="url"
+               autocomplete="off" spellcheck="false" placeholder="Paste a YouTube playlist link" required>
+        <button type="submit" class="paste-btn">
+          <span>Build the map</span>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12h14M13 6l6 6-6 6"/></svg>
+        </button>
+      </div>
+      <p class="paste-hint">Builds one knowledge map across the whole course.</p>
+    </form>
+
+    {% if error %}<p class="paste-error" role="alert">⚠️ {{ error }}</p>{% endif %}
+  </div>
+
+  <!-- ---- SIGNATURE: the notebook spread ---- -->
+  <div class="spread-wrap" id="spread">
+    <div class="spread" id="heroSpread">
+      <div class="spine" aria-hidden="true"></div>
+
+      <div class="page page-left">
+        <div class="page-head">
+          <span class="page-kicker">What YouTube gives you</span>
+          <span class="page-meta">auto-transcript · 47:12</span>
+        </div>
+        <div class="transcript" id="transcript" aria-hidden="true">
+          <p><b>00:00</b> <em>[Music]</em></p>
+          <p><b>00:12</b> okay <s>so um</s> let's <s>uh</s> get started</p>
+          <p><b>00:19</b> last week we looked at reasoning models <s>right</s></p>
+          <p><b>00:31</b> and <s>uh</s> GRPO — <s>sorry, let me go back a slide</s></p>
+          <p><b>00:48</b> <s>so the thing is</s> a vanilla LLM just <s>you know</s> it can't</p>
+          <p><b>01:02</b> <em>[inaudible]</em> catastrophic forgetting</p>
+          <p><b>01:15</b> <s>does that make sense? okay cool cool cool</s></p>
+          <p><b>01:28</b> so instead we <s>kind of</s> retrieve at inference time</p>
+          <p><b>01:44</b> <em>[Music]</em></p>
+        </div>
+        <p class="page-verdict page-verdict--bad">47 minutes. No structure.</p>
+      </div>
+
+      <div class="page page-right">
+        <div class="page-head">
+          <span class="page-kicker">What you revise from</span>
+          <span class="page-meta">15 sections · 15 cards</span>
+        </div>
+        <div class="notes" id="notes">
+          <h3 class="notes-h">Limitations of Standalone LLMs</h3>
+          <ul class="notes-list">
+            <li>Vanilla LLM = prompt → response. No internal reasoning chain.</li>
+            <li>Fine-tuning to inject facts causes <mark>catastrophic forgetting</mark>.</li>
+            <li>So: retrieve at inference instead → <b>RAG</b>.</li>
+          </ul>
+          <div class="def-card">
+            <span class="def-term">GRPO</span>
+            <span class="def-body">Drops the value network — scores a group of completions against each other.</span>
+          </div>
+          <p class="margin-note">this is the bit that's on the exam</p>
+        </div>
+        <p class="page-verdict page-verdict--good">Four minutes. Yours to revise.</p>
+      </div>
+    </div>
+    <p class="spread-caption">
+      <span class="arrow" aria-hidden="true">↳</span>
+      Same lecture, both pages. Left is the transcript. Right is what you get back.
+    </p>
+  </div>
+</section>
+
+{% if current_user and hist %}
+<!-- ============ YOUR SHELF (history) ============ -->
+<section class="section shelf" id="shelf" aria-label="Your history">
+  <div class="section-head">
+    <h2 class="section-title">Pick up where you left off</h2>
+    <p class="section-sub">Everything you've opened, kept on your shelf.</p>
+  </div>
+  <ul class="cards">
+    {% for h in hist %}
+    <li class="card">
+      <span class="card-tag card-tag--ready">{{ 'Course map' if h.kind == 'playlist' else 'Lecture' }}</span>
+      <h3 class="card-title">{{ h.title }}</h3>
+      <a class="card-open" href="{{ url_for('course_page', playlist_id=h.ref_id) if h.kind == 'playlist' else url_for('view_video', video_id=h.ref_id) }}">Open →</a>
+    </li>
+    {% endfor %}
+  </ul>
+</section>
+{% endif %}
+
+<!-- ============ WHAT YOU GET ============ -->
+<section class="section" id="get">
+  <div class="section-head">
+    <h2 class="section-title">What lands in your notebook</h2>
+    <p class="section-sub">For a playlist you also get a knowledge map of the whole course.</p>
+  </div>
+  <ul class="cards">
+    <li class="card reveal" data-tilt="-1.4">
+      <span class="card-tag card-tag--ready">Ready</span>
+      <h3 class="card-title">Notes</h3>
+      <p class="card-body">Sections and subtopics in the order the lecturer taught them, with the definitions they actually wrote down.</p>
+      <p class="card-foot">15 sections · 8 definitions</p>
+    </li>
+    <li class="card reveal" data-tilt="1.1">
+      <span class="card-tag card-tag--ready">Ready</span>
+      <h3 class="card-title">Flashcards</h3>
+      <p class="card-body">Recall questions tagged easy to hard, pulled straight from your own notes. Flip, then file or send back.</p>
+      <p class="card-foot">definition · concept · reasoning</p>
+    </li>
+    <li class="card reveal" data-tilt="-0.8">
+      <span class="card-tag card-tag--ready">Ready</span>
+      <h3 class="card-title">Quiz</h3>
+      <p class="card-body">A practice paper from your notes. Get one wrong and it points you to the exact moment in the video to rewatch.</p>
+      <p class="card-foot">marked in red pen</p>
+    </li>
+    <li class="card reveal" data-tilt="1.6">
+      <span class="card-tag card-tag--ready">Ready</span>
+      <h3 class="card-title">AI tutor</h3>
+      <p class="card-body">Ask anything about the lecture. It answers from the transcript and cites where it got each point.</p>
+      <p class="card-foot">cites its sources</p>
+    </li>
+  </ul>
+</section>
+
+<!-- ============ HOW IT WORKS ============ -->
+<section class="section section--ruled" id="how">
+  <div class="section-head">
+    <h2 class="section-title">How it works</h2>
+    <p class="section-sub">Three steps, in order. The middle one is where the time goes.</p>
+  </div>
+  <ol class="steps">
+    <li class="step reveal">
+      <span class="step-num">1</span>
+      <div>
+        <h3 class="step-title">Paste a link</h3>
+        <p class="step-body">A single lecture, or a whole playlist. Any language — the transcript is translated to English first, so the notes read cleanly.</p>
+      </div>
+    </li>
+    <li class="step reveal">
+      <span class="step-num">2</span>
+      <div>
+        <h3 class="step-title">It reads the whole thing</h3>
+        <p class="step-body">Filler and <em>[Music]</em> tags are stripped, the transcript is split at sentence boundaries, and each chunk is rewritten into notes — then, for a playlist, linked into one knowledge map.</p>
+      </div>
+    </li>
+    <li class="step reveal">
+      <span class="step-num">3</span>
+      <div>
+        <h3 class="step-title">Revise</h3>
+        <p class="step-body">Notes, summary, flashcards, and a quiz in one workspace. Miss a question and it sends you to the exact second in the video to rewatch.</p>
+      </div>
+    </li>
+  </ol>
+</section>
+
+<!-- ============ CLOSING ============ -->
+<section class="section closing">
+  <h2 class="closing-title">It's late and the course is ten lectures long.</h2>
+  <p class="closing-sub">Paste the link. Read the notes instead.</p>
+  <a class="closing-cta" href="#paste">Paste a link</a>
+</section>
+
+</main>
+
+<footer class="footer">
+  <p class="footer-line">LearnTube — a revision tool, not a replacement for the lecture.</p>
+  <p class="footer-meta">Built with Flask · Gemini · youtube-transcript-api</p>
+</footer>
+
+<!-- ============ PROCESSING OVERLAY ============ -->
+<div class="proc" id="proc" hidden>
+  <div class="proc-sheet" role="status" aria-live="polite">
+    <p class="proc-kicker">Reading your lecture</p>
+    <h2 class="proc-title" id="procTitle">Fetching the transcript</h2>
+    <ol class="proc-steps" id="procSteps">
+      <li data-step>Fetching the transcript</li>
+      <li data-step>Checking it's a lecture</li>
+      <li data-step>Cleaning and splitting into chunks</li>
+      <li data-step>Translating if needed</li>
+      <li data-step>Writing detailed notes</li>
+      <li data-step>Structuring into JSON</li>
+      <li data-step>Generating flashcards</li>
+      <li data-step>Indexing for the AI tutor</li>
+    </ol>
+    <div class="proc-track"><div class="proc-fill" id="procFill"></div></div>
+    <p class="proc-note">This takes 1–3 minutes depending on length. The notes are written section by section.</p>
+  </div>
+</div>
+
+<script src="{{ url_for('static', filename='js/landing.js') }}"></script>
+
+</body>
+</html>
