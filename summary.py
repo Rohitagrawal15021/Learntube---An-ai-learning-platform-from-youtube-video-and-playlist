@@ -1,4 +1,4 @@
-from config import client
+from config import generate_with_retry
 from google.genai import types
 
 
@@ -28,8 +28,8 @@ Transcript:
 {chunk}
 """
 
-    response = client.models.generate_content(
-        model="gemini-3.6-flash",
+    response = generate_with_retry(
+        model="gemini-2.0-flash",
         contents=prompt,
         config=types.GenerateContentConfig(
             temperature=0.2
@@ -99,8 +99,8 @@ Section Summaries:
 {combined_chunk}
 """
 
-    response = client.models.generate_content(
-        model="gemini-3.6-flash",
+    response = generate_with_retry(
+        model="gemini-2.0-flash",
         contents=prompt,
         config=types.GenerateContentConfig(
             temperature=0.2

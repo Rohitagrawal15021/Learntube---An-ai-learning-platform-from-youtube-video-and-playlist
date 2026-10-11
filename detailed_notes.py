@@ -1,4 +1,4 @@
-from config import client
+from config import generate_with_retry
 from google.genai import types
 
 
@@ -40,8 +40,8 @@ Lecture Transcript:
 {chunk}
 """
     try:
-        response = client.models.generate_content(
-        model="gemini-3.6-flash",
+        response = generate_with_retry(
+        model="gemini-3.5-flash",
         contents=prompt,
         config=types.GenerateContentConfig(
             temperature=0.2
@@ -62,7 +62,7 @@ def detail_notes_chunks(chunks):
 
     detailed_notes_list = []
 
-    group_size = 4
+    group_size = 2
 
     for i in range(0, len(chunks), group_size):
 
@@ -82,22 +82,24 @@ def detail_notes_chunks(chunks):
 
     return detailed_notes_list
 
-def final_detailed_notes(combined_chunk):
+def _merge_pair(notes_a, notes_b):
     """
-    Generates final detailed notes for the entire transcript.
+    Merges two note sections into one using the LLM.
+    Each input is a single group's notes, so the combined prompt stays small.
     """
 
-    print("Generating final detailed notes...")
+    combined = notes_a + "\n\n" + notes_b
+
     prompt = f"""
 You are an expert technical educator.
 
-The following text contains study notes generated from different chunks of the SAME lecture.
+The following text contains study notes generated from different parts of the SAME lecture.
 
-Your task is to merge them into one complete lecture note.
+Your task is to merge them into one cohesive set of notes.
 
 Instructions:
 
-1. Merge all notes into one document.
+1. Merge the two sections into one document.
 2. Preserve every important concept.
 3. Remove duplicate explanations.
 4. Maintain the chronological order of topics.
@@ -108,18 +110,71 @@ Instructions:
 9. Make the notes easy to study.
 10. Do NOT summarize further.
 11. Do NOT remove educational content.
-12. Return only the final lecture notes.
+12. Return only the merged lecture notes.
 13. Format the output using Markdown.
 
 Lecture Notes:
 
-{combined_chunk}
+{combined}
 """
-    response = client.models.generate_content(
-        model="gemini-3.6-flash",
+    response = generate_with_retry(
+        model="gemini-3.5-flash",
         contents=prompt,
         config=types.GenerateContentConfig(
             temperature=0.2
         )
     )
+    # If the merge comes back empty, don't crash on None — fall back to simply
+    # concatenating the two sections so no notes are lost.
+    if not getattr(response, "text", None) or not response.text.strip():
+        print("Merge returned empty — falling back to concatenated sections.")
+        return combined
     return response.text.strip()
+
+
+def final_detailed_notes(notes_list):
+    """
+    Merges a list of note sections using pairwise (tree-style) reduction.
+
+    Instead of combining everything into one giant prompt, this merges
+    two sections at a time — like a tournament bracket — so each LLM call
+    stays small enough for Groq's token limits.
+
+    Example with 4 groups:
+        Round 1: [G1+G2] → M1,  [G3+G4] → M2
+        Round 2: [M1+M2] → Final
+    """
+    if not notes_list:
+        return ""
+
+    # Filter out empty results from failed LLM calls
+    current = [n for n in notes_list if n and n.strip()]
+
+    if not current:
+        return ""
+
+    if len(current) == 1:
+        return current[0]
+
+    merge_round = 1
+    while len(current) > 1:
+        next_round = []
+        total_pairs = (len(current) + 1) // 2
+
+        for i in range(0, len(current), 2):
+            if i + 1 < len(current):
+                pair_num = i // 2 + 1
+                print(f"Merge round {merge_round}, pair {pair_num}/{total_pairs}: merging...")
+                merged = _merge_pair(current[i], current[i + 1])
+                next_round.append(merged)
+            else:
+                # Odd one out — carry forward to next round
+                print(f"Merge round {merge_round}: carrying forward unpaired section")
+                next_round.append(current[i])
+
+        current = next_round
+        merge_round += 1
+
+    print("Pairwise merge complete.")
+    return current[0]
+

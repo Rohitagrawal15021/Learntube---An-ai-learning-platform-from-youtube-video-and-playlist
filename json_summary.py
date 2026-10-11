@@ -49,7 +49,7 @@ Educational Summary:
 {final_summary}
 """
     response = generate_with_retry(
-        model="gemini-3.6-flash",
+        model="gemini-3.5-flash",
         contents=prompt,
         config=types.GenerateContentConfig(
         temperature=0.2,
