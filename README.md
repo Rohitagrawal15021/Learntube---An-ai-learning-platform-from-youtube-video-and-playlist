@@ -1,4 +1,4 @@
-# LearnTube - AI-Powered Video Learning & Knowledge Graph Assistant 🎓🚀
+# LearnTube AI — Intelligent Video-to-Knowledge Learning Platform 🎓🚀
 
 [![Python Version](https://img.shields.io/badge/python-3.10%20%7C%203.11%20%7C%203.12-blue.svg)](https://www.python.org/)
 [![Framework](https://img.shields.io/badge/framework-Flask-black.svg)](https://flask.palletsprojects.com/)
@@ -6,7 +6,7 @@
 [![LLM Powered](https://img.shields.io/badge/AI-Gemini%20%2B%20Groq-orange.svg)](https://groq.com/)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 
-**LearnTube** transforms long YouTube lecture videos and entire multi-video playlists into structured, interactive study materials: comprehensive lecture notes, active-recall flashcards, prerequisite knowledge graphs, and a real-time conversational AI tutor grounded in the video transcripts via RAG (Retrieval-Augmented Generation).
+> **LearnTube AI** is an intelligent learning platform that transforms YouTube lecture videos and multi-video playlists into an interactive, easy-to-learn educational experience: comprehensive textbook-grade notes, active-recall flashcard decks, prerequisite concept knowledge graphs, and a 24/7 conversational AI study tutor grounded in video transcripts via RAG.
 
 ---
 
