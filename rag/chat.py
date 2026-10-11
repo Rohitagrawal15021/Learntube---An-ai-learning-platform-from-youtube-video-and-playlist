@@ -153,7 +153,11 @@ def answer_video_question(
         + f"\n\nStudent question:\n{question}"
     )
 
-    model = os.getenv("GROQ_MODEL", DEFAULT_MODEL)
+    # RAG chat benefits from a reasoning model (gpt-oss) for deeper Q&A.
+    # This is intentionally separate from GROQ_MODEL which is used by the
+    # pipeline fallback (translation, summarisation) where non-reasoning
+    # models like qwen are preferred to avoid wasting tokens on thinking.
+    model = os.getenv("GROQ_RAG_MODEL", DEFAULT_MODEL)
     completion = _get_groq_client().chat.completions.create(
         model=model,
         messages=[

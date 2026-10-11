@@ -6,8 +6,13 @@ import re
 # Configuration
 # --------------------------------------------------
 
-MAX_CHUNK_WORDS = 500
-MIN_CHUNK_WORDS = 80
+# The embedding model (paraphrase-multilingual-MiniLM-L12-v2) truncates input
+# at 128 tokens — roughly 90-100 English words, fewer for other languages.
+# Chunks larger than that silently lose their tail at embedding time, so keep
+# chunks comfortably under that ceiling and overlap them so a sentence split
+# across two chunks is still retrievable from either side.
+MAX_CHUNK_WORDS = 90
+OVERLAP_WORDS = 15
 
 
 # --------------------------------------------------
@@ -34,12 +39,13 @@ def clean_text(text):
 # Split a long section into semantic-ish chunks
 # --------------------------------------------------
 
-def split_long_text(text, max_words=MAX_CHUNK_WORDS):
+def split_long_text(text, max_words=MAX_CHUNK_WORDS, overlap_words=OVERLAP_WORDS):
     """
-    Split long text using sentence boundaries.
+    Split long text on sentence boundaries into chunks of at most ``max_words``.
 
-    We don't blindly cut at a character position.
-    We try to keep complete sentences together.
+    Consecutive chunks overlap by roughly ``overlap_words`` words (carried over
+    as whole trailing sentences) so a concept that straddles a boundary is still
+    retrievable from both chunks.
     """
 
     text = clean_text(text)
@@ -54,10 +60,11 @@ def split_long_text(text, max_words=MAX_CHUNK_WORDS):
         return [text]
 
     # Split into sentences
-    sentences = re.split(
-        r"(?<=[.!?])\s+",
-        text
-    )
+    sentences = [
+        s.strip()
+        for s in re.split(r"(?<=[.!?])\s+", text)
+        if s.strip()
+    ]
 
     chunks = []
     current_chunk = []
@@ -65,24 +72,27 @@ def split_long_text(text, max_words=MAX_CHUNK_WORDS):
 
     for sentence in sentences:
 
-        sentence = sentence.strip()
-
-        if not sentence:
-            continue
-
         sentence_words = len(sentence.split())
 
-        # If adding this sentence exceeds the limit
+        # If adding this sentence exceeds the limit, flush the current chunk
+        # and seed the next one with an overlapping tail.
         if (
             current_words + sentence_words > max_words
             and current_chunk
         ):
-            chunks.append(
-                " ".join(current_chunk).strip()
-            )
+            chunks.append(" ".join(current_chunk).strip())
 
-            current_chunk = []
-            current_words = 0
+            overlap = []
+            overlap_count = 0
+            for prev in reversed(current_chunk):
+                prev_words = len(prev.split())
+                if overlap_count + prev_words > overlap_words and overlap:
+                    break
+                overlap.insert(0, prev)
+                overlap_count += prev_words
+
+            current_chunk = list(overlap)
+            current_words = overlap_count
 
         current_chunk.append(sentence)
         current_words += sentence_words
@@ -100,14 +110,62 @@ def split_long_text(text, max_words=MAX_CHUNK_WORDS):
 # Create RAG documents from one section
 # --------------------------------------------------
 
+def _subtopic_to_text(subtopic):
+    """
+    Flatten one subtopic dict into a single readable text block.
+
+    The notes schema stores a section's actual teaching content under
+    ``sections[].subtopics[]`` — NOT a flat ``section.content`` field. Reading
+    the wrong key is what previously caused almost every section to be dropped
+    and the whole lecture to collapse into one or two RAG chunks.
+    """
+
+    parts = []
+
+    title = clean_text(subtopic.get("title", ""))
+    if title:
+        parts.append(f"{title}.")
+
+    content = clean_text(subtopic.get("content", ""))
+    if content:
+        parts.append(content)
+
+    points = [
+        clean_text(p)
+        for p in (subtopic.get("important_points") or [])
+        if clean_text(p)
+    ]
+    if points:
+        parts.append("Important points: " + "; ".join(points) + ".")
+
+    examples = [
+        clean_text(e)
+        for e in (subtopic.get("examples") or [])
+        if clean_text(e)
+    ]
+    if examples:
+        parts.append("Examples: " + "; ".join(examples) + ".")
+
+    mistakes = [
+        clean_text(m)
+        for m in (subtopic.get("common_mistakes") or [])
+        if clean_text(m)
+    ]
+    if mistakes:
+        parts.append("Common mistakes: " + "; ".join(mistakes) + ".")
+
+    return " ".join(parts).strip()
+
+
 def create_section_chunks(
     heading,
     content,
     note_id,
-    title
+    title,
+    subtopic_index=0
 ):
     """
-    Convert one detailed-note section into
+    Convert one subtopic's flattened text into
     RAG-ready documents.
     """
 
@@ -137,6 +195,7 @@ def create_section_chunks(
                 "note_id": str(note_id),
                 "title": title,
                 "section": heading,
+                "subtopic_index": subtopic_index,
                 "chunk_index": index,
                 "source_type": "section"
             }
@@ -217,21 +276,31 @@ def create_rag_chunks(
             ""
         )
 
-        content = section.get(
-            "content",
-            ""
-        )
+        subtopics = section.get("subtopics", []) or []
 
-        section_chunks = create_section_chunks(
-            heading=heading,
-            content=content,
-            note_id=note_id,
-            title=title
-        )
-
-        rag_documents.extend(
-            section_chunks
-        )
+        # New schema: teaching content lives in subtopics. Older note files may
+        # still carry a flat "content" string — handle both.
+        if subtopics:
+            for sub_index, subtopic in enumerate(subtopics):
+                sub_text = _subtopic_to_text(subtopic)
+                rag_documents.extend(
+                    create_section_chunks(
+                        heading=heading,
+                        content=sub_text,
+                        note_id=note_id,
+                        title=title,
+                        subtopic_index=sub_index,
+                    )
+                )
+        else:
+            rag_documents.extend(
+                create_section_chunks(
+                    heading=heading,
+                    content=section.get("content", ""),
+                    note_id=note_id,
+                    title=title,
+                )
+            )
 
     # --------------------------------------------------
     # 3. Definitions
@@ -368,6 +437,68 @@ def create_rag_chunks(
                 "section": "Exam Tips",
                 "chunk_index": index,
                 "source_type": "exam_tip"
+            }
+        })
+
+    # --------------------------------------------------
+    # 6b. Memory tricks
+    # --------------------------------------------------
+
+    memory_tricks = notes.get("memory_tricks", [])
+
+    for index, trick in enumerate(memory_tricks):
+
+        trick = clean_text(trick)
+
+        if not trick:
+            continue
+
+        rag_documents.append({
+            "text": (
+                "Memory Trick:\n\n"
+                + trick
+            ),
+
+            "metadata": {
+                "note_id": str(note_id),
+                "title": title,
+                "section": "Memory Tricks",
+                "chunk_index": index,
+                "source_type": "memory_trick"
+            }
+        })
+
+    # --------------------------------------------------
+    # 6c. Frequently confused topics
+    # --------------------------------------------------
+
+    confused = notes.get("frequently_confused_topics", [])
+
+    for index, item in enumerate(confused):
+
+        topic = clean_text(item.get("topic", ""))
+        confusion = clean_text(item.get("confusion", ""))
+        correct = clean_text(item.get("correct_concept", ""))
+
+        if not topic and not confusion and not correct:
+            continue
+
+        document_text = (
+            f"Frequently Confused: {topic}\n\n"
+            f"Common confusion: {confusion}\n\n"
+            f"Correct concept: {correct}"
+        )
+
+        rag_documents.append({
+            "text": document_text,
+
+            "metadata": {
+                "note_id": str(note_id),
+                "title": title,
+                "section": "Frequently Confused Topics",
+                "topic": topic,
+                "chunk_index": index,
+                "source_type": "frequently_confused"
             }
         })
 
