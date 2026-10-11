@@ -1,4 +1,4 @@
-from config import client
+from config import generate_with_retry
 from google.genai import types
 from langdetect import detect, LangDetectException
 
@@ -31,13 +31,19 @@ Text:
 {chunk}
 """
 
-    response = client.models.generate_content(
-        model="gemini-3.6-flash",
+    response = generate_with_retry(
+        model="gemini-3.5-flash",
         contents=prompt,
         config=types.GenerateContentConfig(
             temperature=0
         )
     )
+
+    # If the model returns nothing (empty/blocked), keep the original text
+    # rather than crashing on None or silently dropping the chunk's content.
+    if not getattr(response, "text", None) or not response.text.strip():
+        print("Translation returned empty — keeping original text for this chunk.")
+        return chunk
 
     return response.text.strip()
 
