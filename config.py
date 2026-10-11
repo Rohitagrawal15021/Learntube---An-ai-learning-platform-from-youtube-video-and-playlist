@@ -1,6 +1,7 @@
 import os
 import time
 import random
+import threading
 from dotenv import load_dotenv
 from google import genai
 from google.genai import errors
@@ -16,6 +17,24 @@ client = genai.Client(
 # HTTP status codes that are transient and worth retrying.
 _RETRYABLE_STATUS = {429, 500, 502, 503, 504}
 
+# ---- Cooldown between Gemini calls -----------------------------------------
+# Gemini free-tier rate-limits aggressively.  A small pause between calls
+# avoids back-to-back 503s when the pipeline makes many sequential requests.
+_COOLDOWN_SECONDS = float(os.getenv("GEMINI_COOLDOWN", "2"))  # configurable
+_last_gemini_call = 0.0
+# Flask serves requests on many threads; the cooldown bookkeeping and the lazy
+# Groq client must be guarded so two threads don't race on them.
+_gemini_lock = threading.Lock()
+
+# Exceptions that indicate a bug in our own code (bad kwargs, typo, wrong type)
+# rather than a transient outage. These must propagate instead of being retried
+# or quietly masked by the Groq fallback — otherwise a real bug looks like
+# "Gemini was slow today" forever.
+_FATAL_EXCEPTIONS = (
+    TypeError, KeyError, IndexError, AttributeError,
+    NameError, ValueError, AssertionError,
+)
+
 # ---- Groq fallback ----------------------------------------------------------
 
 _groq_client = None
@@ -25,15 +44,30 @@ def _get_groq_client():
     """Lazily build the Groq client. Returns None if key/SDK is unavailable."""
     global _groq_client
     if _groq_client is None:
-        api_key = os.getenv("GROQ_API_KEY")
-        if not api_key:
-            return None
-        try:
-            from groq import Groq
-        except ModuleNotFoundError:
-            return None
-        _groq_client = Groq(api_key=api_key)
+        with _gemini_lock:
+            if _groq_client is None:  # re-check inside the lock
+                api_key = os.getenv("GROQ_API_KEY")
+                if not api_key:
+                    return None
+                try:
+                    from groq import Groq
+                except ModuleNotFoundError:
+                    return None
+                _groq_client = Groq(api_key=api_key)
     return _groq_client
+
+
+def _looks_blank(response):
+    """True when a 'successful' Gemini response carries no usable text.
+
+    Accessing ``response.text`` can itself raise when the request was blocked
+    (no candidates returned), so guard it — a blocked response is "blank" too.
+    """
+    try:
+        text = response.text
+    except Exception:
+        return True
+    return not (text and text.strip())
 
 
 class _GroqResponse:
@@ -43,42 +77,93 @@ class _GroqResponse:
         self.text = text
 
 
+# Groq model cascade: ordered by reliability for text generation.
+# Non-reasoning models are preferred because reasoning models (gpt-oss) waste
+# tokens on hidden "thinking" and often return empty responses.
+_GROQ_MODEL_CASCADE = [
+    # (model_name, max_input_chars, is_reasoning)
+    ("qwen/qwen3.8-27b",     24_000, False),  # Non-reasoning, best for translation/summarisation
+    ("openai/gpt-oss-20b",   20_000, True),   # Reasoning — 8K TPM, may return empty
+    ("openai/gpt-oss-120b",  20_000, True),   # Reasoning — 8K TPM, may return empty
+]
+
+
 def _groq_fallback(model=None, contents=None, config=None, **_ignored):
-    """Answer the same prompt with Groq. Returns a response-like obj or None."""
+    """Answer the same prompt with Groq, cascading through models on failure."""
     groq = _get_groq_client()
     if groq is None:
         return None
 
-    prompt = contents if isinstance(contents, str) else str(contents)
+    raw_prompt = contents if isinstance(contents, str) else str(contents)
+
     temperature = getattr(config, "temperature", None)
     max_tokens = getattr(config, "max_output_tokens", None)
     want_json = getattr(config, "response_mime_type", None) == "application/json"
 
-    messages = []
-    if want_json:
-        messages.append({
-            "role": "system",
-            "content": "You must respond with valid JSON only. No prose, no markdown.",
-        })
-    messages.append({"role": "user", "content": prompt})
+    # Build the cascade: start with the env-configured model (if set and in
+    # the cascade), then fall through the rest in order.
+    env_model = os.getenv("GROQ_MODEL", "")
+    cascade = list(_GROQ_MODEL_CASCADE)
+    # If the user configured a specific model, move it to the front
+    if env_model:
+        cascade = [
+            entry for entry in cascade if entry[0] == env_model
+        ] + [
+            entry for entry in cascade if entry[0] != env_model
+        ]
+        # If env model isn't in our list, add it at the front with safe defaults
+        if not any(entry[0] == env_model for entry in _GROQ_MODEL_CASCADE):
+            is_reasoning = any(tag in env_model.lower() for tag in ("gpt-oss", "o1", "o3", "deepseek-r1"))
+            cascade.insert(0, (env_model, 20_000, is_reasoning))
 
-    call = {
-        "model": os.getenv("GROQ_MODEL", "openai/gpt-oss-20b"),
-        "messages": messages,
-        "temperature": 0 if temperature is None else temperature,
-    }
-    if max_tokens:
-        call["max_completion_tokens"] = max_tokens
-    if want_json:
-        call["response_format"] = {"type": "json_object"}
+    last_error = None
+    for model_name, max_input_chars, is_reasoning in cascade:
+        # Truncate prompt to fit this model's TPM budget
+        prompt = raw_prompt
+        if len(prompt) > max_input_chars:
+            print(f"Groq ({model_name}): truncating prompt from {len(prompt)} to {max_input_chars} chars.")
+            prompt = prompt[:max_input_chars]
 
-    try:
-        completion = groq.chat.completions.create(**call)
-        print(f"Gemini unavailable — fell back to Groq ({call['model']}).")
-        return _GroqResponse(completion.choices[0].message.content)
-    except Exception as e:
-        print(f"Groq fallback also failed: {e}")
-        return None
+        messages = []
+        if want_json:
+            messages.append({
+                "role": "system",
+                "content": "You must respond with valid JSON only. No prose, no markdown.",
+            })
+        messages.append({"role": "user", "content": prompt})
+
+        call = {
+            "model": model_name,
+            "messages": messages,
+            "temperature": 0 if temperature is None else temperature,
+        }
+        if is_reasoning:
+            # Reasoning models use hidden "thinking tokens" that count against
+            # max_completion_tokens.  Always set a generous floor so the model
+            # has room for both thinking AND visible output — even when the
+            # caller didn't specify max_output_tokens.
+            call["max_completion_tokens"] = max(max_tokens or 0, 2048)
+        elif max_tokens:
+            call["max_completion_tokens"] = max_tokens
+        if want_json:
+            call["response_format"] = {"type": "json_object"}
+
+        try:
+            completion = groq.chat.completions.create(**call)
+            text = completion.choices[0].message.content
+            if text and text.strip():
+                print(f"Gemini unavailable — fell back to Groq ({model_name}).")
+                return _GroqResponse(text)
+            print(f"Groq ({model_name}) returned empty response, trying next model...")
+        except Exception as e:
+            last_error = e
+            print(f"Groq ({model_name}) failed: {e}")
+            # Continue to the next model in the cascade
+            continue
+
+    if last_error:
+        print(f"All Groq models exhausted. Last error: {last_error}")
+    return None
 
 
 def generate_with_retry(max_retries=2, base_delay=1.0, max_delay=8.0, **kwargs):
@@ -100,13 +185,40 @@ def generate_with_retry(max_retries=2, base_delay=1.0, max_delay=8.0, **kwargs):
     configured / also fails.
     """
     last_error = None
+    global _last_gemini_call
     for attempt in range(max_retries + 1):
         try:
-            return client.models.generate_content(**kwargs)
+            # Respect a global cooldown between calls to avoid 503 rate-limits.
+            # Guarded by a lock because Flask serves requests on many threads;
+            # without it two threads read the same stale timestamp and both skip
+            # the pause.
+            with _gemini_lock:
+                elapsed = time.time() - _last_gemini_call
+                if elapsed < _COOLDOWN_SECONDS:
+                    time.sleep(_COOLDOWN_SECONDS - elapsed)
+                _last_gemini_call = time.time()
+
+            response = client.models.generate_content(**kwargs)
+
+            # A 200 with empty / blocked content is a failure, not a success.
+            # Previously it slipped through and crashed callers that do
+            # `response.text.strip()`; now it fails over to Groq like any outage.
+            if _looks_blank(response):
+                last_error = RuntimeError("Gemini returned an empty or blocked response")
+                print("Gemini returned an empty/blocked response — trying Groq fallback.")
+                break
+
+            return response
+
+        except _FATAL_EXCEPTIONS:
+            # A genuine programming error (bad kwargs, wrong type, ...). Do NOT
+            # retry or silently fall back to Groq — that only hides the real bug.
+            raise
+
         except errors.APIError as e:
             last_error = e
-            status = getattr(e, "code", None)
-            # Non-retryable error, or last attempt used: stop hitting Gemini.
+            status = getattr(e, "code", None) or getattr(e, "status_code", None)
+            # Non-retryable status, or last attempt used: stop hitting Gemini.
             if status not in _RETRYABLE_STATUS or attempt == max_retries:
                 break
             delay = min(base_delay * (2 ** attempt), max_delay)
@@ -117,7 +229,22 @@ def generate_with_retry(max_retries=2, base_delay=1.0, max_delay=8.0, **kwargs):
             )
             time.sleep(delay)
 
-    # Gemini exhausted — try Groq before giving up.
+        except Exception as e:
+            # Transient network / SSL errors (httpx.ConnectError, SSL
+            # UNEXPECTED_EOF, socket timeouts) that aren't APIError subclasses.
+            # Genuine code bugs were already filtered out above.
+            last_error = e
+            if attempt == max_retries:
+                break
+            delay = min(base_delay * (2 ** attempt), max_delay)
+            delay += random.uniform(0, delay * 0.25)
+            print(
+                f"Gemini connection error: {type(e).__name__}. "
+                f"Retry {attempt + 1}/{max_retries} in {delay:.1f}s..."
+            )
+            time.sleep(delay)
+
+    # Gemini exhausted (or returned empty) — try Groq before giving up.
     fallback = _groq_fallback(**kwargs)
     if fallback is not None:
         return fallback

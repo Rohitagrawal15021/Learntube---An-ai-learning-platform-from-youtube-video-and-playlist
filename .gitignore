@@ -1,4 +1,33 @@
-.env
+# Virtual Environments
 venv/
+.venv/
+ENV/
+env/
+
+# Environment Variables & Secrets
+.env
+.env.*
+!.env.example
+
+# Byte-compiled / optimized files
 __pycache__/
-*.pyc
+*.py[cod]
+*$py.class
+tempCodeRunnerFile.py
+
+# Claude & Agent tooling cache
+.claude/
+
+# SQLite databases
+*.db
+*.sqlite
+*.sqlite3
+
+# Local test outputs & scraped caches
+data/chroma/
+data/transcripts/
+data/generated/
+output/
+transcript*.txt
+transcript_*.json
+flashcardtst.py
