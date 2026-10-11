@@ -41,40 +41,63 @@
 
 ---
 
-## 🏗️ Architecture & Pipeline Flow
+## 🏗️ Architecture & Pipeline Flow: How It Works
+
+Rather than simply summarizing text, **LearnTube AI** acts like a dedicated study assistant that watches lectures with you, takes comprehensive notes, maps prerequisite concepts, and tutors you whenever you have doubts.
+
+Here is the complete journey of how a raw YouTube video or playlist becomes an interactive learning platform:
 
 ```text
-[ YouTube Video / Playlist URL ]
-               │
-               ▼
-┌────────────────────────────────────────┐
-│     Caption Intelligence Engine        │  <-- Timestamp extraction & language fallback
-└──────────────────┬─────────────────────┘
-                   │
-                   ▼
-┌────────────────────────────────────────┐
-│   Educational Content Classification   │  <-- Filters non-study content
-└──────────────────┬─────────────────────┘
-                   │
-                   ▼
-┌────────────────────────────────────────┐
-│  Cleaning, Chunking & Translation      │  <-- Clean text, semantic chunking, translation
-└──────────────────┬─────────────────────┘
-                   │
-         ┌─────────┴─────────┐
-         ▼                   ▼
-┌──────────────────┐ ┌────────────────────────┐
-│ Detailed Notes   │ │ Concept Graph Builder  │
-│ & JSON Synthesis │ │ (Nodes, Edges & DAG)   │
-└────────┬─────────┘ └────────────────────────┘
-         │
-         ├───────────────────────┬──────────────────────┐
-         ▼                       ▼                      ▼
-┌──────────────────┐   ┌──────────────────┐   ┌──────────────────┐
-│ Active-Recall    │   │ ChromaDB Vector  │   │ Interactive HTML │
-│ Flashcards       │   │ Store & RAG Chat │   │ Notes Export     │
-└──────────────────┘   └──────────────────┘   └──────────────────┘
+ 1. INGESTION               2. REFINEMENT              3. KNOWLEDGE STRUCTURING           4. RETRIEVAL & TUTORING
+┌──────────────────┐       ┌──────────────────┐       ┌────────────────────────────┐      ┌─────────────────────────┐
+│ YouTube URL      │       │ Content Filter   │       │ Deep Textbook Notes        │      │ Multilingual Embeddings │
+│ (Single/Playlist)│       │ (Is it study?)   │       │ (Formula, Code & Sections) │      │ (Sentence Transformers) │
+└────────┬─────────┘       └────────┬─────────┘       └─────────────┬──────────────┘      └────────────┬────────────┘
+         │                          │                               │                                  │
+         ▼                          ▼                               ▼                                  ▼
+┌──────────────────┐       ┌──────────────────┐       ┌────────────────────────────┐      ┌─────────────────────────┐
+│ Caption Engine   │──────►│ Text Cleaner &   │──────►│ Structured JSON Notes &    │─────►│ ChromaDB Vector Store & │
+│ (Auto-Fallback & │       │ Smart Translator │       │ Active-Recall Flashcards   │      │ 24/7 Groq AI Tutor Chat │
+│  Timestamps)     │       │ (Chunk-level)    │       └─────────────┬──────────────┘      └─────────────────────────┘
+└──────────────────┘       └──────────────────┘                     │
+                                                                    ▼
+                                                      ┌────────────────────────────┐
+                                                      │ Knowledge Concept Graph    │
+                                                      │ (DAG: Learn A before B)    │
+                                                      └────────────────────────────┘
 ```
+
+---
+
+### 🧩 Step-by-Step Humanized Pipeline Breakdown
+
+#### 🎧 Stage 1: The Listener (Smart Caption Extraction)
+- **Input:** You paste a YouTube video link or an entire playlist (up to 50+ lectures).
+- **Language Auto-Fallback:** Most tools fail if a video lacks English captions. LearnTube checks for manual English captions first. If not found, it automatically detects and extracts whatever language is available (Hindi, Spanish, French, auto-generated, etc.).
+- **Timestamp Anchoring:** Every single sentence is tagged with exact `start` and `duration` seconds, allowing students to click any concept and jump right to that moment in the video.
+
+#### 🛡️ Stage 2: The Gatekeeper & Editor (Validation & Cleaning)
+- **Content Classifier:** Before burning AI tokens, Gemini checks whether the video is genuinely educational (filtering out gaming streams, vlogs, and music videos).
+- **Transcript Cleaner:** Real spoken language is messy. The cleaner strips filler words (*"uhm"*, *"like"*, *"subscribe to my channel"*), audio glitches, and repetitive stammering.
+- **Smart Chunking:** Splits 2-hour long lectures into digestible, semantically coherent 500–1000 word chunks.
+- **Dynamic Translation:** Non-English lectures are translated chunk-by-chunk into clear English so all downstream study tools stay consistent.
+
+#### 📖 Stage 3: The Textbook Author (Deep Notes & Flashcards)
+- **Detailed Multi-Pass Notes:** Instead of a generic 3-bullet summary, the synthesis engine writes structured, textbook-grade study material. It preserves code snippets, mathematical equations, technical terms, and real-world examples.
+- **Strict JSON Structuring:** Formats the notes into clean JSON (Overview, Headings, Key Takeaways, Definitions, and Common Pitfalls).
+- **Active-Recall Flashcards:** Converts key definitions and mechanisms into a 15-card spaced-repetition deck designed for self-testing.
+- **Standalone HTML Export:** Renders the notes into a standalone, beautiful HTML document (`notes.html`) for offline reading.
+
+#### 🕸️ Stage 4: The Curriculum Architect (Concept Graph & Prerequisites)
+- **Concept Discovery:** Discovers 5–12 core ideas per lecture and pins each to the exact 30-second block where it was introduced.
+- **Cross-Lecture Concept Merging:** In a 20-video course, topics repeat. Using multilingual vector cosine similarity, it merges concepts taught across multiple lectures into single unified nodes.
+- **Prerequisite Detection:** Evaluates which concepts are foundational and must be learned before others (e.g., *"Learn Derivatives before Gradient Descent"*).
+- **DAG Generation:** Resolves circular loops to construct a clean Directed Acyclic Graph (DAG) so learners have a clear roadmap.
+
+#### 🤖 Stage 5: The Personal Study Buddy (RAG & Real-Time AI Tutor)
+- **Vector Indexing:** Chunks the structured notes and transcripts and encodes them into dense vectors using HuggingFace's `paraphrase-multilingual-MiniLM-L12-v2`.
+- **ChromaDB Storage:** Stores vectors locally in ChromaDB for sub-millisecond retrieval.
+- **Context-Grounded Tutor (Groq AI):** When a student asks *"Why do we use learning rate decay?"*, LearnTube retrieves the top matching video transcript segments and prompts Groq (`llama-3.3-70b-versatile`) to give an instant, accurate answer cited with the exact video timestamps.
 
 ---
 
