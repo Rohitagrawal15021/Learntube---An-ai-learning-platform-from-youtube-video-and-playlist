@@ -28,6 +28,10 @@ data/chroma/
 data/transcripts/
 data/generated/
 output/
+presentation_output/
+tmp/
+bit_mesra_logo_transparent.png
 transcript*.txt
 transcript_*.json
 flashcardtst.py
+

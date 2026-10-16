@@ -12,6 +12,13 @@
 <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
 <link rel="stylesheet" href="{{ url_for('static', filename='css/notes.css') }}">
 <link rel="stylesheet" href="{{ url_for('static', filename='css/flashcard.css') }}">
+<style>
+  .qmark-watch{display:inline-block;margin-top:10px;text-decoration:none;font-weight:700;font-size:.85rem;
+    color:#FDFCF8;background:#1B2A4A;border-radius:3px;padding:9px 14px;box-shadow:3px 3px 0 #FFE45C;
+    transition:transform .14s ease, box-shadow .14s ease;}
+  .qmark-watch:hover{transform:translate(-1px,-1px);box-shadow:5px 5px 0 #FFE45C;}
+  .qmark-watch[hidden]{display:none;}
+</style>
 </head>
 
 <body>
@@ -248,6 +255,7 @@
                 <div class="qmark-copy">
                   <p class="qmark-verdict" id="qVerdict"></p>
                   <p class="qmark-why" id="qWhy"></p>
+                  <a class="qmark-watch" id="qWatch" target="_blank" rel="noopener" hidden></a>
                 </div>
               </div>
 

@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Generating your notes… — LearnTube</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&family=Archivo:wght@400;500;600;700&family=Kalam:wght@400;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/landing.css') }}">
+</head>
+<body>
+<div class="proc" id="proc">
+  <div class="proc-sheet" role="status" aria-live="polite">
+    <p class="proc-kicker">Building your study pack</p>
+    <h2 class="proc-title" id="procTitle">Fetching the transcript…</h2>
+    <ol class="proc-steps" id="procSteps">
+      <li data-step>Fetching the transcript</li>
+      <li data-step>Checking it's a lecture</li>
+      <li data-step>Writing detailed notes</li>
+      <li data-step>Summary &amp; flashcards</li>
+      <li data-step>Building the quiz</li>
+      <li data-step>Indexing for the AI tutor</li>
+    </ol>
+    <div class="proc-track"><div class="proc-fill" id="procFill"></div></div>
+    <p class="proc-note" id="procNote">This takes 1–3 minutes. Keep this tab open — the full notes, summary, quiz and AI tutor open automatically when it's ready.</p>
+  </div>
+</div>
+
+<script>
+  var VIDEO_ID = {{ video_id | tojson | safe }};
+  var steps = document.querySelectorAll('#procSteps [data-step]');
+  var title = document.getElementById('procTitle');
+  var fill = document.getElementById('procFill');
+  var durations = [4000, 2500, 25000, 14000, 9000, 8000];
+  var i = 0;
+  function advance() {
+    if (i > 0) { steps[i - 1].classList.remove('is-active'); steps[i - 1].classList.add('is-done'); }
+    if (i >= steps.length) { fill.style.width = '95%'; title.textContent = 'Almost done — finishing up…'; return; }
+    steps[i].classList.add('is-active');
+    title.textContent = steps[i].textContent.trim() + '…';
+    fill.style.width = Math.round(((i + 1) / steps.length) * 90) + '%';
+    i += 1;
+    setTimeout(advance, durations[i - 1] || 6000);
+  }
+  advance();
+
+  fetch('/api/videos/' + encodeURIComponent(VIDEO_ID) + '/generate', { method: 'POST' })
+    .then(function (r) { return r.json().then(function (d) { return { ok: r.ok, d: d }; }); })
+    .then(function (res) {
+      if (res.ok && res.d.ok) {
+        fill.style.width = '100%';
+        title.textContent = 'Ready! Opening your notes…';
+        window.location.href = '/video/' + encodeURIComponent(VIDEO_ID);
+      } else {
+        title.textContent = 'Could not generate this one';
+        document.getElementById('procNote').innerHTML =
+          (res.d && res.d.error ? res.d.error : 'Something went wrong.') +
+          ' <a href="/" style="color:var(--pen-red);font-weight:600">Go back</a>';
+      }
+    })
+    .catch(function () {
+      title.textContent = 'Network error';
+      document.getElementById('procNote').innerHTML = 'Please try again. <a href="/" style="color:var(--pen-red);font-weight:600">Go back</a>';
+    });
+</script>
+</body>
+</html>

@@ -89,6 +89,24 @@ def _group_segments(segments, block_seconds=BLOCK_SECONDS):
     return blocks
 
 
+def _cap_blocks(blocks, max_chars=11000):
+    """Keep a prompt within the free-tier token budget by evenly sampling blocks
+    across the whole lecture (so we still cover start → end, not just the intro)."""
+    total = sum(len(b.get("text", "")) + 12 for b in blocks)
+    if total <= max_chars or len(blocks) <= 2:
+        return blocks
+    step = max(1, total // max_chars)          # sample every step-th block
+    sampled = blocks[::step] or blocks[:1]
+    out, used = [], 0
+    for b in sampled:
+        c = len(b.get("text", "")) + 12
+        if used + c > max_chars and out:
+            break
+        out.append(b)
+        used += c
+    return out
+
+
 def _snap_to_block(start, blocks):
     """Snap a model-supplied time to the nearest real block start."""
     if not blocks:
@@ -116,7 +134,8 @@ def extract_video_concepts(transcript, position=None, title=None):
     if not blocks:
         return []
 
-    numbered = "\n".join(f"[{b['start']}] {b['text']}" for b in blocks)
+    prompt_blocks = _cap_blocks(blocks)   # keep the prompt within free-tier limits
+    numbered = "\n".join(f"[{b['start']}] {b['text']}" for b in prompt_blocks)
 
     prompt = f"""You are mapping the key concepts taught in one lecture of a course.
 
@@ -255,8 +274,8 @@ def _first_position(node):
     return node["occurrences"][0]["position"] or 0
 
 
-def detect_prerequisites(nodes):
-    """Ask the LLM which concepts must be understood before which (edges)."""
+def _detect_prerequisites_batch(nodes):
+    """Ask the LLM which concepts must be understood before which (one batch)."""
     if len(nodes) < 2:
         return []
 
@@ -305,6 +324,48 @@ Return ONLY valid JSON in exactly this shape:
             seen.add((src, dst))
 
     return edges
+
+
+# Maximum concepts per LLM call for prerequisite detection.
+# 40 keeps prompts well under token limits while producing dense edges.
+PREREQ_BATCH_SIZE = 40
+PREREQ_OVERLAP = 10  # Overlap between windows so cross-boundary edges form
+
+
+def detect_prerequisites(nodes):
+    """Detect prerequisite edges, batching large concept lists into windows.
+
+    For small playlists (≤ PREREQ_BATCH_SIZE concepts) this is a single LLM
+    call. For larger ones, a sliding window ensures every pair of nearby
+    concepts gets a chance to form an edge.
+    """
+    if len(nodes) < 2:
+        return []
+
+    if len(nodes) <= PREREQ_BATCH_SIZE:
+        return _detect_prerequisites_batch(nodes)
+
+    # Sliding window over concepts (sorted by first occurrence)
+    all_edges = []
+    seen = set()
+    step = PREREQ_BATCH_SIZE - PREREQ_OVERLAP
+
+    for start in range(0, len(nodes), step):
+        window = nodes[start : start + PREREQ_BATCH_SIZE]
+        if len(window) < 2:
+            break
+
+        print(f"    Detecting prerequisites for concepts {start + 1}–{start + len(window)} of {len(nodes)}...")
+        batch_edges = _detect_prerequisites_batch(window)
+
+        for edge in batch_edges:
+            key = (edge["from"], edge["to"])
+            if key not in seen:
+                all_edges.append(edge)
+                seen.add(key)
+
+    print(f"    Total prerequisite edges detected: {len(all_edges)}")
+    return all_edges
 
 
 def make_dag(nodes, edges):

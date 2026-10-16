@@ -80,11 +80,15 @@ class _GroqResponse:
 # Groq model cascade: ordered by reliability for text generation.
 # Non-reasoning models are preferred because reasoning models (gpt-oss) waste
 # tokens on hidden "thinking" and often return empty responses.
+# NOTE: the free tier caps *input tokens per minute* (qwen ITPM ~7000). ~2.4
+# chars/token on this content means a request must stay well under ~16k chars;
+# we cap at 10k so a single call fits with margin (back-to-back calls are still
+# spaced by the retry/backoff + cooldown).
 _GROQ_MODEL_CASCADE = [
     # (model_name, max_input_chars, is_reasoning)
-    ("qwen/qwen3.8-27b",     24_000, False),  # Non-reasoning, best for translation/summarisation
-    ("openai/gpt-oss-20b",   20_000, True),   # Reasoning — 8K TPM, may return empty
-    ("openai/gpt-oss-120b",  20_000, True),   # Reasoning — 8K TPM, may return empty
+    ("qwen/qwen3.8-27b",     10_000, False),  # Non-reasoning, best for translation/summarisation
+    ("openai/gpt-oss-20b",   10_000, True),   # Reasoning — may return empty
+    ("openai/gpt-oss-120b",  10_000, True),   # Reasoning — may return empty
 ]
 
 
@@ -148,18 +152,34 @@ def _groq_fallback(model=None, contents=None, config=None, **_ignored):
         if want_json:
             call["response_format"] = {"type": "json_object"}
 
-        try:
-            completion = groq.chat.completions.create(**call)
-            text = completion.choices[0].message.content
-            if text and text.strip():
-                print(f"Gemini unavailable — fell back to Groq ({model_name}).")
-                return _GroqResponse(text)
+        # The one reliable fallback model (qwen) can hit Groq's own per-minute
+        # rate limit during a burst. Retry it a couple of times with backoff
+        # before giving up — otherwise a momentary Groq 429 drops us all the way
+        # through to None and the original Gemini error surfaces.
+        text = None
+        for groq_attempt in range(3):
+            try:
+                completion = groq.chat.completions.create(**call)
+                text = completion.choices[0].message.content or ""
+                break
+            except Exception as e:
+                last_error = e
+                msg = str(e).lower()
+                transient = ("429" in msg or "rate" in msg or "resource" in msg
+                             or "too many" in msg or "503" in msg)
+                if transient and groq_attempt < 2:
+                    delay = 2.0 * (groq_attempt + 1) + random.uniform(0, 1)
+                    print(f"Groq ({model_name}) rate-limited — retry {groq_attempt + 1}/2 in {delay:.1f}s...")
+                    time.sleep(delay)
+                    continue
+                print(f"Groq ({model_name}) failed: {e}")
+                break
+
+        if text and text.strip():
+            print(f"Gemini unavailable — fell back to Groq ({model_name}).")
+            return _GroqResponse(text)
+        if text is not None:
             print(f"Groq ({model_name}) returned empty response, trying next model...")
-        except Exception as e:
-            last_error = e
-            print(f"Groq ({model_name}) failed: {e}")
-            # Continue to the next model in the cascade
-            continue
 
     if last_error:
         print(f"All Groq models exhausted. Last error: {last_error}")

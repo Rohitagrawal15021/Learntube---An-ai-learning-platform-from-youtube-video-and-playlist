@@ -1,5 +1,6 @@
 
 import json
+import random
 import re
 import time
 from pathlib import Path
@@ -10,6 +11,13 @@ from youtube_transcript_api import YouTubeTranscriptApi
 
 OUTPUT_DIR = Path("data/transcripts")
 LANGUAGES = ["en"]
+
+# Rate-limiting settings to avoid YouTube IP bans
+BASE_DELAY = (3, 6)          # Random delay range (seconds) between videos
+COOLDOWN_EVERY = 10         # Take a long break after every N videos
+COOLDOWN_SECONDS = 30       # Duration of the long break
+MAX_RETRIES = 3             # Retry count per video on transient errors
+RETRY_BACKOFF = [15, 30, 60]  # Exponential backoff wait (seconds) per retry
 
 
 def safe_filename(value):
@@ -55,8 +63,8 @@ def get_playlist_videos(playlist_url):
     return playlist, videos
 
 
-def fetch_transcript(video_id):
-    """Fetch caption segments with timestamps."""
+def _fetch_transcript_once(video_id):
+    """Single attempt to fetch caption segments with timestamps."""
 
     api = YouTubeTranscriptApi()
 
@@ -84,6 +92,37 @@ def fetch_transcript(video_id):
         "language_code": getattr(transcript, "language_code", "unknown"),
         "segments": segments,
     }
+
+
+def fetch_transcript(video_id):
+    """Fetch transcript with automatic retry and exponential backoff."""
+
+    last_error = None
+
+    for attempt in range(MAX_RETRIES + 1):
+        try:
+            return _fetch_transcript_once(video_id)
+        except Exception as error:
+            last_error = error
+            error_str = str(error).lower()
+
+            # Only retry on rate-limit / IP-block errors
+            is_block = any(kw in error_str for kw in [
+                "blocking", "blocked", "too many", "ip",
+                "request", "429", "403",
+            ])
+
+            if not is_block or attempt >= MAX_RETRIES:
+                raise
+
+            wait = RETRY_BACKOFF[min(attempt, len(RETRY_BACKOFF) - 1)]
+            print(
+                f"  ⏳ YouTube rate-limited (attempt {attempt + 1}/{MAX_RETRIES}). "
+                f"Waiting {wait}s before retry..."
+            )
+            time.sleep(wait)
+
+    raise last_error
 
 
 def safe_print(text):
@@ -187,8 +226,16 @@ def process_playlist(playlist_url):
 
         manifest["videos"].append(record)
 
-        # Avoid sending requests too rapidly.
-        time.sleep(1)
+        # Smart rate-limiting to avoid YouTube IP bans
+        if position % COOLDOWN_EVERY == 0 and position < len(videos):
+            print(
+                f"\n  🧊 Cooldown: pausing {COOLDOWN_SECONDS}s after "
+                f"{position} videos to avoid IP blocking..."
+            )
+            time.sleep(COOLDOWN_SECONDS)
+        else:
+            delay = random.uniform(*BASE_DELAY)
+            time.sleep(delay)
 
         # Save progress after every video, including failures.
         manifest_path = output_folder / "manifest.json"
@@ -236,6 +283,8 @@ def process_playlist(playlist_url):
     print(f"Failed transcripts: {failed}")
     print(f"Output folder: {output_folder}")
     print(f"Manifest: {manifest_path}")
+
+    return playlist_id
 
 
 if __name__ == "__main__":

@@ -42,6 +42,8 @@
         return a;
     }
 
+    function fmtSec(s) { s = Math.max(0, Math.round(s || 0)); return Math.floor(s / 60) + ':' + ('0' + (s % 60)).slice(-2); }
+
     /* Reveals are a nicety; being able to read the page is not. Anything
        already on screen is shown straight away rather than waiting on the
        observer, so a stalled callback can never leave content invisible. */
@@ -485,6 +487,8 @@
        8. FLASHCARD DECK
        ====================================================================== */
     var cards = [];
+    var pool = [];   /* quiz questions — declared here so building it in initDeck
+                        (below) isn't wiped by a later re-initialisation */
 
     var deck = (function () {
         var scene   = $('deck');
@@ -684,60 +688,77 @@
        Every wrong option is a real answer from elsewhere in this lecture,
        so the shape of an option never gives it away.
        ====================================================================== */
-    var pool = [];
-
     function buildQuizPool(list) {
         pool = [];
+        var vid = window.chatVideoId || DATA.video_id || '';
 
-        /* recall questions straight off the flashcards */
-        list.forEach(function (c) {
-            if (!c.question || !c.answer) return;
-            var siblings = list.filter(function (o) {
-                return o.id !== c.id && o.answer && o.type === c.type;
-            });
-            if (siblings.length < 3) {
-                siblings = list.filter(function (o) { return o.id !== c.id && o.answer; });
-            }
-            if (siblings.length < 3) return;
+        /* Preferred: the timestamp-anchored quiz generated from the transcript,
+           so a wrong answer can jump the student to that moment in the video. */
+        var timed = Array.isArray(DATA.quiz) ? DATA.quiz : [];
+        timed.forEach(function (q) {
+            if (!q.question || !Array.isArray(q.options) || q.options.length !== 4) return;
+            var ai = (typeof q.answer_index === 'number') ? q.answer_index : 0;
             pool.push({
-                topic: c.topic || 'This lecture',
-                weak: c.topic || 'This lecture',
-                text: c.question,
-                right: c.answer,
-                wrong: shuffle(siblings).slice(0, 3).map(function (o) { return o.answer; })
+                topic: 'This lecture',
+                weak: (q.question || '').slice(0, 42),
+                text: q.question,
+                right: q.options[ai],
+                wrong: q.options.filter(function (o, i) { return i !== ai; }),
+                why: q.explanation || '',
+                start: (typeof q.start === 'number') ? q.start : null,
+                video_id: q.video_id || vid
             });
         });
 
-        /* term-matching from the glossary — shorter options, changes the rhythm */
-        defs.forEach(function (d) {
-            if (!d.term || !d.meaning) return;
-            var others = defs.filter(function (o) { return o.term !== d.term; });
-            if (others.length < 3) return;
-            pool.push({
-                topic: 'Glossary',
-                /* the term, not the tab it came from — "re-read Glossary" is
-                   no help, "re-read Chunk overlap" is */
-                weak: d.term,
-                text: 'Which term does this describe? “' + d.meaning + '”',
-                right: d.term,
-                wrong: shuffle(others).slice(0, 3).map(function (o) { return o.term; })
+        /* Fallback (sample notebook / no transcript): build from the flashcards,
+           glossary and mix-ups. Every wrong option is a real answer from
+           elsewhere in the lecture. */
+        if (!pool.length) {
+            list.forEach(function (c) {
+                if (!c.question || !c.answer) return;
+                var siblings = list.filter(function (o) {
+                    return o.id !== c.id && o.answer && o.type === c.type;
+                });
+                if (siblings.length < 3) {
+                    siblings = list.filter(function (o) { return o.id !== c.id && o.answer; });
+                }
+                if (siblings.length < 3) return;
+                pool.push({
+                    topic: c.topic || 'This lecture',
+                    weak: c.topic || 'This lecture',
+                    text: c.question,
+                    right: c.answer,
+                    wrong: shuffle(siblings).slice(0, 3).map(function (o) { return o.answer; })
+                });
             });
-        });
 
-        /* the mix-ups make the sharpest questions — ask for the correction */
-        mixups.forEach(function (m) {
-            if (!m.topic || !m.correct_concept) return;
-            var others = mixups.filter(function (o) { return o.topic !== m.topic; });
-            var wrong = [m.confusion].concat(others.map(function (o) { return o.correct_concept; }));
-            if (wrong.length < 3) return;
-            pool.push({
-                topic: 'Easy to mix up',
-                weak: m.topic,
-                text: 'People get ' + m.topic + ' wrong. What\'s actually true?',
-                right: m.correct_concept,
-                wrong: wrong.slice(0, 3)
+            defs.forEach(function (d) {
+                if (!d.term || !d.meaning) return;
+                var others = defs.filter(function (o) { return o.term !== d.term; });
+                if (others.length < 3) return;
+                pool.push({
+                    topic: 'Glossary',
+                    weak: d.term,
+                    text: 'Which term does this describe? “' + d.meaning + '”',
+                    right: d.term,
+                    wrong: shuffle(others).slice(0, 3).map(function (o) { return o.term; })
+                });
             });
-        });
+
+            mixups.forEach(function (m) {
+                if (!m.topic || !m.correct_concept) return;
+                var others = mixups.filter(function (o) { return o.topic !== m.topic; });
+                var wrong = [m.confusion].concat(others.map(function (o) { return o.correct_concept; }));
+                if (wrong.length < 3) return;
+                pool.push({
+                    topic: 'Easy to mix up',
+                    weak: m.topic,
+                    text: 'People get ' + m.topic + ' wrong. What\'s actually true?',
+                    right: m.correct_concept,
+                    wrong: wrong.slice(0, 3)
+                });
+            });
+        }
 
         var best = load('quizbest', null);
         if (best && $('quizBest')) {
@@ -841,9 +862,21 @@
             mark.classList.toggle('is-wrong', !correct);
             $('qVerdict').textContent = correct ? 'Right.' : 'Not that one.';
             $('qWhy').textContent = correct
-                ? 'Filed under ' + (q.weak || q.topic) + '.'
-                : 'The right answer is marked above. Re-read ' + (q.weak || q.topic) + '.';
+                ? (q.why || ('Filed under ' + (q.weak || q.topic) + '.'))
+                : (q.why || ('The right answer is marked above. Re-read ' + (q.weak || q.topic) + '.'));
             mark.hidden = false;
+
+            /* wrong answer → offer the exact moment in the video to rewatch */
+            var watch = $('qWatch');
+            if (watch) {
+                if (!correct && q.start != null && q.video_id) {
+                    watch.href = 'https://www.youtube.com/watch?v=' + q.video_id + '&t=' + Math.floor(q.start) + 's';
+                    watch.textContent = '▶ Watch this moment · ' + fmtSec(q.start);
+                    watch.hidden = false;
+                } else {
+                    watch.hidden = true;
+                }
+            }
 
             $('quizScore').textContent = right + ' right';
             $('quizFill').style.width = (((at + 1) / paper.length) * 100) + '%';

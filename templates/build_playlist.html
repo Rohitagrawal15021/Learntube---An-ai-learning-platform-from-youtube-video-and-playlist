@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Building your course map… — LearnTube</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&family=Archivo:wght@400;500;600;700&family=Kalam:wght@400;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/landing.css') }}">
+</head>
+<body>
+<div class="proc" id="proc">
+  <div class="proc-sheet" role="status" aria-live="polite">
+    <p class="proc-kicker">Building your course</p>
+    <h2 class="proc-title" id="procTitle">Reading the playlist…</h2>
+    <ol class="proc-steps" id="procSteps">
+      <li data-step>Reading the playlist</li>
+      <li data-step>Fetching every lecture's transcript</li>
+      <li data-step>Finding the key concepts</li>
+      <li data-step>Linking prerequisites</li>
+      <li data-step>Drawing your 3D course map</li>
+    </ol>
+    <div class="proc-track"><div class="proc-fill" id="procFill"></div></div>
+    <p class="proc-note" id="procNote">First time only — this reads every lecture in the playlist, so it can take a few minutes. The map opens automatically when it's ready.</p>
+  </div>
+</div>
+
+<script>
+  var PLAYLIST_ID = {{ playlist_id | tojson | safe }};
+  var steps = document.querySelectorAll('#procSteps [data-step]');
+  var title = document.getElementById('procTitle');
+  var fill = document.getElementById('procFill');
+  var durations = [4000, 20000, 30000, 15000, 8000];
+  var i = 0;
+  function advance() {
+    if (i > 0) { steps[i - 1].classList.remove('is-active'); steps[i - 1].classList.add('is-done'); }
+    if (i >= steps.length) { fill.style.width = '95%'; title.textContent = 'Almost there…'; return; }
+    steps[i].classList.add('is-active');
+    title.textContent = steps[i].textContent.trim() + '…';
+    fill.style.width = Math.round(((i + 1) / steps.length) * 90) + '%';
+    i += 1;
+    setTimeout(advance, durations[i - 1] || 10000);
+  }
+  advance();
+
+  fetch('/api/playlists/' + encodeURIComponent(PLAYLIST_ID) + '/build', { method: 'POST' })
+    .then(function (r) { return r.json().then(function (d) { return { ok: r.ok, d: d }; }); })
+    .then(function (res) {
+      if (res.ok && res.d.ok) {
+        fill.style.width = '100%';
+        title.textContent = 'Ready! Opening your course map…';
+        window.location.href = '/course/' + encodeURIComponent(res.d.playlist_id || PLAYLIST_ID);
+      } else {
+        title.textContent = 'Could not build this playlist';
+        document.getElementById('procNote').innerHTML =
+          (res.d && res.d.error ? res.d.error : 'Something went wrong.') +
+          ' <a href="/" style="color:var(--pen-red);font-weight:600">Go back</a>';
+      }
+    })
+    .catch(function () {
+      title.textContent = 'Network error';
+      document.getElementById('procNote').innerHTML = 'Please try again. <a href="/" style="color:var(--pen-red);font-weight:600">Go back</a>';
+    });
+</script>
+</body>
+</html>

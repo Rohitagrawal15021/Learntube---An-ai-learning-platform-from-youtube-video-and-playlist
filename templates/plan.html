@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>{{ plan.title }} — Study plan · LearnTube</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&family=Archivo:wght@400;500;600;700&family=Kalam:wght@400;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/landing.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/plan.css') }}">
+</head>
+<body>
+
+<!-- nav -->
+<header class="nav">
+  <a class="brand" href="/">
+    <span class="brand-tab" aria-hidden="true"></span>
+    <span class="brand-name">LearnTube</span>
+  </a>
+  <div class="nav-account">
+    <a class="nav-ghost" href="{{ url_for('course_page', playlist_id=playlist_id) }}">◆ Course map</a>
+    <a class="nav-cta" href="/">New course</a>
+  </div>
+</header>
+
+<main class="plan">
+  <header class="plan-head">
+    <p class="eyebrow">your study plan</p>
+    <h1 class="plan-title">{{ plan.title }}</h1>
+    <p class="plan-sub">
+      {{ plan.total }} concepts, in the order to learn them. We put the
+      <b>foundations that unlock the most</b> first — follow the numbers.
+    </p>
+  </header>
+
+  <div class="plan-cols">
+
+    <!-- LEFT: every lecture → generate its full detailed notes -->
+    <div class="plan-col">
+      <div class="col-head">
+        <h2>Lectures</h2>
+        <span>{{ lectures|length }} video{{ 's' if lectures|length != 1 }}</span>
+      </div>
+      <p class="lec-sub">Generate the full detailed notes, summary, flashcards, quiz &amp; AI tutor for any video.</p>
+      {% if lectures %}
+      <ol class="lec-list">
+        {% for lec in lectures %}
+        <li class="lec">
+          <span class="lec-num">{{ lec.position }}</span>
+          <span class="lec-title">{{ lec.title }}</span>
+          <a class="lec-open{{ ' lec-open--new' if not lec.cached }}" href="{{ url_for('study_video', video_id=lec.video_id) }}">
+            {{ 'Open notes →' if lec.cached else 'Generate →' }}
+          </a>
+        </li>
+        {% endfor %}
+      </ol>
+      {% else %}
+      <p class="lec-sub">No lecture list found for this playlist.</p>
+      {% endif %}
+    </div>
+
+    <!-- RIGHT: the learning pipeline (what to learn, in order) -->
+    <div class="plan-col">
+      <div class="col-head">
+        <h2>Learning pipeline</h2>
+        <span>what to learn, in order</span>
+      </div>
+      {% for band in plan.bands %}
+      <section class="band">
+        <div class="band-head">
+          <h3 class="band-name">{{ band.name }}</h3>
+          <span class="band-count">{{ band['items']|length }} topic{{ 's' if band['items']|length != 1 }}</span>
+        </div>
+        <ol class="plan-list">
+          {% for item in band['items'] %}
+          <li class="prow">
+            <span class="prow-rank">{{ item.rank }}</span>
+
+            <div class="prow-main">
+              <h3 class="prow-label">{{ item.label }}</h3>
+              <p class="prow-def">{{ item.definition }}</p>
+              {% if item.prereqs %}
+              <p class="prow-after">after: {{ item.prereqs|join(' · ') }}</p>
+              {% endif %}
+            </div>
+
+            <div class="prow-meta">
+              <div class="imp" title="Unlocks {{ item.unlocks }} later topic{{ 's' if item.unlocks != 1 }}">
+                <span class="imp-label">importance</span>
+                <span class="imp-bar"><span style="width: {{ item.importance }}%"></span></span>
+                <span class="imp-note">unlocks {{ item.unlocks }}</span>
+              </div>
+              <div class="prow-acts">
+                {% if item.video_id %}
+                <a class="prow-notes" href="{{ url_for('study_video', video_id=item.video_id) }}">📖 Full notes</a>
+                <a class="prow-watch" href="https://www.youtube.com/watch?v={{ item.video_id }}&t={{ item.start }}s" target="_blank" rel="noopener">▶ Watch · {{ item.start_fmt }}</a>
+                {% endif %}
+                <span class="prow-lec">Lecture {{ item.position }}</span>
+              </div>
+            </div>
+          </li>
+          {% endfor %}
+        </ol>
+      </section>
+      {% endfor %}
+    </div>
+
+  </div>
+
+  <p class="plan-foot">
+    Open the <a href="{{ url_for('course_page', playlist_id=playlist_id) }}">3D course map</a>
+    to see how these connect.
+  </p>
+
+</main>
+
+</body>
+</html>

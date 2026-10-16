@@ -46,6 +46,37 @@ def get_transcript(url):
     full_text = " ".join([snippet.text for snippet in fetched_transcript])
     return full_text
 
+
+def get_transcript_segments(url):
+    """Like get_transcript, but returns timestamped segments:
+    [{text, start, duration, end}, ...]. Lets the quiz anchor each question to
+    the exact second in the video, for ANY video (not just pre-extracted ones).
+    """
+    video_id = get_video_id(url)
+    ytt_api = YouTubeTranscriptApi()
+    try:
+        fetched = ytt_api.fetch(video_id, languages=['en'])
+    except Exception:
+        transcript_list = ytt_api.list(video_id)
+        try:
+            first = next(iter(transcript_list))
+        except StopIteration:
+            raise ValueError("No transcript is available for this video.")
+        fetched = first.translate('en').fetch() if first.is_translatable else first.fetch()
+
+    segments = []
+    for snippet in fetched:
+        start = float(getattr(snippet, 'start', 0) or 0)
+        dur = float(getattr(snippet, 'duration', 0) or 0)
+        segments.append({
+            'text': snippet.text,
+            'start': start,
+            'duration': dur,
+            'end': start + dur,
+        })
+    return segments
+
+
 if __name__ == "__main__":
     url = input("Paste a YouTube URL: ")
     try:
