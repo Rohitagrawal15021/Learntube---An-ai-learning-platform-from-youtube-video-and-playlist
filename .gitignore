@@ -35,3 +35,8 @@ transcript*.txt
 transcript_*.json
 flashcardtst.py
 
+# Scratch and external assignment artifacts
+.ass8-deps/
+ccdata-extracted/
+gradient-review*/
+build_gradient_pdf.py
